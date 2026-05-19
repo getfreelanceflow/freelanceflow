@@ -13,6 +13,15 @@ import Proposals from "@/pages/Proposals";
 import ProposalNew from "@/pages/ProposalNew";
 import SavedJobs from "@/pages/SavedJobs";
 import Pricing from "@/pages/Pricing";
+import Clients from "@/pages/Clients";
+import Invoices from "@/pages/Invoices";
+import Earnings from "@/pages/Earnings";
+import Followups from "@/pages/Followups";
+import Templates from "@/pages/Templates";
+import Profile from "@/pages/Profile";
+import RateCalculator from "@/pages/RateCalculator";
+import CoverLetter from "@/pages/CoverLetter";
+import ProposalScore from "@/pages/ProposalScore";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -79,6 +88,15 @@ function ClerkProviderWithRoutes() {
             <Route path="/proposals"><ProtectedRoute component={Proposals} /></Route>
             <Route path="/proposals/new"><ProtectedRoute component={ProposalNew} /></Route>
             <Route path="/saved"><ProtectedRoute component={SavedJobs} /></Route>
+            <Route path="/clients"><ProtectedRoute component={Clients} /></Route>
+            <Route path="/invoices"><ProtectedRoute component={Invoices} /></Route>
+            <Route path="/earnings"><ProtectedRoute component={Earnings} /></Route>
+            <Route path="/followups"><ProtectedRoute component={Followups} /></Route>
+            <Route path="/templates"><ProtectedRoute component={Templates} /></Route>
+            <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
+            <Route path="/rate-calculator"><ProtectedRoute component={RateCalculator} /></Route>
+            <Route path="/cover-letter"><ProtectedRoute component={CoverLetter} /></Route>
+            <Route path="/proposal-score"><ProtectedRoute component={ProposalScore} /></Route>
 
             <Route component={NotFound} />
           </Switch>

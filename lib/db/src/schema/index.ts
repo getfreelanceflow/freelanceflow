@@ -3,3 +3,8 @@ export * from "./proposals";
 export * from "./savedJobs";
 export * from "./conversations";
 export * from "./messages";
+export * from "./clients";
+export * from "./invoices";
+export * from "./followups";
+export * from "./templates";
+export * from "./profile";
