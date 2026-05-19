@@ -1,0 +1,99 @@
+Build a modern SaaS platform called FreelanceFlow AI.
+
+Purpose:
+FreelanceFlow AI helps freelancers find jobs, write winning proposals, and increase their chances of getting hired using AI-generated pitches and optimization tools.
+
+Core Features:
+- Freelance job finder dashboard
+- AI proposal/pitch writer
+- Client response generator
+- Portfolio builder
+- Gig matching system
+- Job alert notifications
+- Skills optimizer (what to learn next)
+- Rate calculator (how much to charge)
+- Saved job tracking system
+- Proposal performance tracker
+- Mobile responsive UI
+- Dark mode dashboard
+
+Pages:
+- Landing page
+- Dashboard
+- Job feed page
+- Proposal generator page
+- Pricing page
+- Login/signup
+- Saved jobs page
+
+Landing Page Design:
+- Clean freelance SaaS aesthetic
+- Blue + teal gradients
+- Modern dashboard preview
+- “Get hired faster” hero section
+- Testimonials
+- CTA buttons
+
+UI Style:
+- Minimal professional freelancer UI
+- Rounded cards
+- Clean typography (Inter)
+- Smooth animations
+
+AI Output Format:
+- Custom job proposal
+- Personalized pitch
+- Client follow-up message
+- Pricing recommendation
+- Success probability score
+- Skills match analysis
+
+AI Prompt Logic:
+You are FreelanceFlow AI, an expert freelance career assistant that writes high-converting proposals and helps users win more jobs.
+
+Authentication:
+- Email login
+- Google login
+- Saved proposals
+- User dashboard
+
+Database Features:
+- Store job applications
+- Save proposals
+- Track success rates
+- Subscription tracking
+
+Monetization:
+Free Plan:
+- 3 proposals/day
+- basic job matches
+
+Pro Plan ($10/month):
+- unlimited proposals
+- job alerts
+- pitch optimization
+- saved history
+
+Pro Plus Plan ($25/month):
+- advanced job matching
+- proposal analytics
+- priority AI responses
+- rate optimization tools
+
+Extra Monetization:
+- Proposal template packs
+- Freelance course bundles
+- Resume + portfolio upgrades
+- Affiliate links (Upwork/Fiverr tools)
+- Paid “proposal review” service
+- Freelance coaching upsells
+- Premium job feeds
+
+High-Ticket Upsells:
+- Done-for-you profile setup ($100+)
+- Freelance success coaching calls
+- Portfolio building service
+- Custom proposal writing service
+
+Goal:
+Make FreelanceFlow AI feel like a premium system that helps freelancers consistently land high-paying clients.
