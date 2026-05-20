@@ -394,4 +394,65 @@ Limit missingSkills to top 5.`;
   }
 });
 
+router.post("/ai/dream-job", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        dreamJob: z.string().min(3),
+        whatIWantToDo: z.string().min(3),
+        currentSkills: z.string().optional(),
+        experience: z.string().optional(),
+        targetRate: z.string().optional(),
+        location: z.string().optional(),
+        remote: z.boolean().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You are an elite freelance career strategist. Given the user's dream role and what they want to do, you generate hyper-relevant, realistic freelance job opportunities matched to their goals. Return ONLY valid JSON.`;
+
+    const user = `User's dream job: ${body.dreamJob}
+What they want to do: ${body.whatIWantToDo}
+${body.currentSkills ? `Current skills: ${body.currentSkills}` : ""}
+${body.experience ? `Experience: ${body.experience}` : ""}
+${body.targetRate ? `Target rate: ${body.targetRate}` : ""}
+${body.location ? `Location: ${body.location}` : ""}
+${body.remote ? `Prefers remote: yes` : ""}
+
+Generate 6 realistic, varied freelance job opportunities matching their dream career path. For each job, output:
+{
+  "matches": [
+    {
+      "title": "specific, realistic job title",
+      "company": "plausible company or 'Independent Client'",
+      "description": "2-3 sentence project description",
+      "skills": ["skill1", "skill2", "skill3", "skill4"],
+      "budgetMin": number (USD),
+      "budgetMax": number (USD),
+      "duration": "e.g., '2 weeks', '3 months ongoing'",
+      "platform": "Upwork|Toptal|LinkedIn|Direct|Contra",
+      "matchScore": number 0-100,
+      "whyItMatches": "1-2 sentences why this fits their dream",
+      "howToWin": "specific actionable tactic to land this job"
+    }
+  ],
+  "careerAdvice": "2-3 sentences of strategic advice for landing roles like this",
+  "searchKeywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"]
+}
+
+Mix budget levels — some entry/short ($500-3k), some mid ($3k-15k), and 1-2 high-ticket ($15k-50k+). Make them feel real, not generic.`;
+
+    const content = await chat(system, user, 2000);
+    let parsed: unknown;
+    try {
+      const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return res.status(500).json({ error: "Failed to parse AI response", raw: content });
+    }
+    res.json(parsed);
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
 export default router;

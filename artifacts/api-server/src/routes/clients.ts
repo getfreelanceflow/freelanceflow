@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { db, clients, invoices } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 const ClientBody = z.object({
   name: z.string().min(1),
@@ -23,9 +25,10 @@ function serialize(c: typeof clients.$inferSelect) {
   };
 }
 
-router.get("/clients", async (_req, res) => {
+router.get("/clients", async (req, res) => {
   try {
-    const result = await db.select().from(clients).orderBy(clients.createdAt);
+    const uid = (req as AuthedRequest).userId;
+    const result = await db.select().from(clients).where(eq(clients.userId, uid)).orderBy(clients.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -34,10 +37,12 @@ router.get("/clients", async (_req, res) => {
 
 router.post("/clients", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = ClientBody.parse(req.body);
     const [row] = await db
       .insert(clients)
       .values({
+        userId: uid,
         name: body.name,
         email: body.email ?? null,
         company: body.company ?? null,
@@ -54,10 +59,11 @@ router.post("/clients", async (req, res) => {
 
 router.get("/clients/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
-    const [row] = await db.select().from(clients).where(eq(clients.id, id));
+    const [row] = await db.select().from(clients).where(and(eq(clients.id, id), eq(clients.userId, uid)));
     if (!row) return res.status(404).json({ error: "Client not found" });
-    const clientInvoices = await db.select().from(invoices).where(eq(invoices.clientId, id));
+    const clientInvoices = await db.select().from(invoices).where(and(eq(invoices.clientId, id), eq(invoices.userId, uid)));
     res.json({
       ...serialize(row),
       invoices: clientInvoices.map((i) => ({
@@ -76,11 +82,12 @@ router.get("/clients/:id", async (req, res) => {
 
 router.put("/clients/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = ClientBody.partial().parse(req.body);
     const updates: Record<string, unknown> = { ...body };
     if (body.hourlyRate != null) updates.hourlyRate = String(body.hourlyRate);
-    const [row] = await db.update(clients).set(updates).where(eq(clients.id, id)).returning();
+    const [row] = await db.update(clients).set(updates).where(and(eq(clients.id, id), eq(clients.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Client not found" });
     res.json(serialize(row));
   } catch (e) {
@@ -90,8 +97,9 @@ router.put("/clients/:id", async (req, res) => {
 
 router.delete("/clients/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
-    const [row] = await db.delete(clients).where(eq(clients.id, id)).returning();
+    const [row] = await db.delete(clients).where(and(eq(clients.id, id), eq(clients.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Client not found" });
     res.status(204).end();
   } catch (e) {

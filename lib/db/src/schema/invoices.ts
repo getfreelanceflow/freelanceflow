@@ -10,6 +10,7 @@ export type InvoiceLineItem = {
 
 export const invoices = pgTable("invoices", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   clientId: integer("client_id"),
   clientName: text("client_name").notNull(),
   invoiceNumber: text("invoice_number").notNull(),

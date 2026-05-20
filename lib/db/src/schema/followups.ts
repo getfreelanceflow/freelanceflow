@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const followups = pgTable("followups", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   clientId: integer("client_id"),
   proposalId: integer("proposal_id"),
   title: text("title").notNull(),

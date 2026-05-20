@@ -23,6 +23,7 @@ import {
   FileSignature,
   MessageSquare,
   BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -63,6 +64,7 @@ const navGroups: { label: string; items: { href: string; label: string; icon: ty
   {
     label: "AI Tools",
     items: [
+      { href: "/dream-job", label: "Dream Job Finder", icon: Sparkles },
       { href: "/cover-letter", label: "Cover Letter", icon: Mail },
       { href: "/proposal-score", label: "Score Proposal", icon: Target },
       { href: "/rate-calculator", label: "Rate Calculator", icon: Calculator },

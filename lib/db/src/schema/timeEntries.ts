@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const timeEntries = pgTable("time_entries", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   clientId: integer("client_id"),
   description: text("description").notNull(),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull(),

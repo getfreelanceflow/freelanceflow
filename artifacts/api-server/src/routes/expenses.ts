@@ -2,9 +2,11 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import { expenses } from "@workspace/db/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 const upsertSchema = z.object({
   description: z.string().min(1),
@@ -15,17 +17,20 @@ const upsertSchema = z.object({
   notes: z.string().nullable().optional(),
 });
 
-router.get("/expenses", async (_req, res) => {
-  const rows = await db.select().from(expenses).orderBy(desc(expenses.date));
+router.get("/expenses", async (req, res) => {
+  const uid = (req as AuthedRequest).userId;
+  const rows = await db.select().from(expenses).where(eq(expenses.userId, uid)).orderBy(desc(expenses.date));
   res.json(rows);
 });
 
 router.post("/expenses", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const [row] = await db
       .insert(expenses)
       .values({
+        userId: uid,
         description: body.description,
         amount: String(body.amount),
         category: body.category,
@@ -42,6 +47,7 @@ router.post("/expenses", async (req, res) => {
 
 router.patch("/expenses/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id, 10);
     const body = upsertSchema.partial().parse(req.body);
     const updates: Record<string, unknown> = {};
@@ -52,7 +58,7 @@ router.patch("/expenses/:id", async (req, res) => {
     if (body.taxDeductible !== undefined) updates.taxDeductible = body.taxDeductible;
     if (body.notes !== undefined) updates.notes = body.notes;
 
-    const [row] = await db.update(expenses).set(updates).where(eq(expenses.id, id)).returning();
+    const [row] = await db.update(expenses).set(updates).where(and(eq(expenses.id, id), eq(expenses.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json(row);
   } catch (e) {
@@ -61,18 +67,21 @@ router.patch("/expenses/:id", async (req, res) => {
 });
 
 router.delete("/expenses/:id", async (req, res) => {
+  const uid = (req as AuthedRequest).userId;
   const id = parseInt(req.params.id, 10);
-  await db.delete(expenses).where(eq(expenses.id, id));
+  await db.delete(expenses).where(and(eq(expenses.id, id), eq(expenses.userId, uid)));
   res.status(204).end();
 });
 
-router.get("/expenses/summary", async (_req, res) => {
+router.get("/expenses/summary", async (req, res) => {
+  const uid = (req as AuthedRequest).userId;
   const byCategory = await db
     .select({
       category: expenses.category,
       total: sql<string>`COALESCE(SUM(${expenses.amount}), 0)`,
     })
     .from(expenses)
+    .where(eq(expenses.userId, uid))
     .groupBy(expenses.category);
 
   const totals = await db
@@ -81,7 +90,8 @@ router.get("/expenses/summary", async (_req, res) => {
       deductible: sql<string>`COALESCE(SUM(CASE WHEN ${expenses.taxDeductible} THEN ${expenses.amount} ELSE 0 END), 0)`,
       count: sql<number>`COUNT(*)::int`,
     })
-    .from(expenses);
+    .from(expenses)
+    .where(eq(expenses.userId, uid));
 
   const t = totals[0] ?? { total: "0", deductible: "0", count: 0 };
   res.json({

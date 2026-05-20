@@ -30,6 +30,7 @@ import Goals from "@/pages/Goals";
 import Contract from "@/pages/Contract";
 import Negotiate from "@/pages/Negotiate";
 import SkillGap from "@/pages/SkillGap";
+import DreamJob from "@/pages/DreamJob";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -113,6 +114,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/contract"><ProtectedRoute component={Contract} /></Route>
             <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
             <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>
+            <Route path="/dream-job"><ProtectedRoute component={DreamJob} /></Route>
 
             <Route component={NotFound} />
           </Switch>

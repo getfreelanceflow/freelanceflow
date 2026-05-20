@@ -18,6 +18,7 @@ export type SocialLinks = {
 
 export const profile = pgTable("profile", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").unique(),
   displayName: text("display_name").notNull().default(""),
   headline: text("headline").notNull().default(""),
   bio: text("bio").notNull().default(""),

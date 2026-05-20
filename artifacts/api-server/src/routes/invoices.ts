@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { db, invoices, clients } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 const LineItem = z.object({
   description: z.string(),
@@ -33,17 +35,18 @@ function serialize(i: typeof invoices.$inferSelect) {
   };
 }
 
-async function recalcClientEarnings(clientId: number) {
+async function recalcClientEarnings(uid: string, clientId: number) {
   const [{ total }] = await db
     .select({ total: sql<string>`COALESCE(SUM(${invoices.amount}), 0)::text` })
     .from(invoices)
-    .where(sql`${invoices.clientId} = ${clientId} AND ${invoices.status} = 'paid'`);
-  await db.update(clients).set({ totalEarned: total }).where(eq(clients.id, clientId));
+    .where(sql`${invoices.clientId} = ${clientId} AND ${invoices.userId} = ${uid} AND ${invoices.status} = 'paid'`);
+  await db.update(clients).set({ totalEarned: total }).where(and(eq(clients.id, clientId), eq(clients.userId, uid)));
 }
 
-router.get("/invoices", async (_req, res) => {
+router.get("/invoices", async (req, res) => {
   try {
-    const result = await db.select().from(invoices).orderBy(invoices.createdAt);
+    const uid = (req as AuthedRequest).userId;
+    const result = await db.select().from(invoices).where(eq(invoices.userId, uid)).orderBy(invoices.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -52,10 +55,12 @@ router.get("/invoices", async (_req, res) => {
 
 router.post("/invoices", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = InvoiceBody.parse(req.body);
     const [row] = await db
       .insert(invoices)
       .values({
+        userId: uid,
         clientId: body.clientId ?? null,
         clientName: body.clientName,
         invoiceNumber: body.invoiceNumber,
@@ -68,7 +73,7 @@ router.post("/invoices", async (req, res) => {
         paidAt: body.status === "paid" ? new Date() : null,
       })
       .returning();
-    if (body.status === "paid" && body.clientId) await recalcClientEarnings(body.clientId);
+    if (body.status === "paid" && body.clientId) await recalcClientEarnings(uid, body.clientId);
     res.status(201).json(serialize(row));
   } catch (e) {
     res.status(400).json({ error: String(e) });
@@ -77,8 +82,9 @@ router.post("/invoices", async (req, res) => {
 
 router.get("/invoices/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
-    const [row] = await db.select().from(invoices).where(eq(invoices.id, id));
+    const [row] = await db.select().from(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, uid)));
     if (!row) return res.status(404).json({ error: "Invoice not found" });
     res.json(serialize(row));
   } catch (e) {
@@ -88,6 +94,7 @@ router.get("/invoices/:id", async (req, res) => {
 
 router.put("/invoices/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = InvoiceBody.partial().parse(req.body);
     const updates: Record<string, unknown> = { ...body };
@@ -95,9 +102,9 @@ router.put("/invoices/:id", async (req, res) => {
     if (body.dueDate != null) updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.status === "sent") updates.sentAt = new Date();
     if (body.status === "paid") updates.paidAt = new Date();
-    const [row] = await db.update(invoices).set(updates).where(eq(invoices.id, id)).returning();
+    const [row] = await db.update(invoices).set(updates).where(and(eq(invoices.id, id), eq(invoices.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Invoice not found" });
-    if (row.clientId) await recalcClientEarnings(row.clientId);
+    if (row.clientId) await recalcClientEarnings(uid, row.clientId);
     res.json(serialize(row));
   } catch (e) {
     res.status(400).json({ error: String(e) });
@@ -106,19 +113,21 @@ router.put("/invoices/:id", async (req, res) => {
 
 router.delete("/invoices/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
-    const [row] = await db.delete(invoices).where(eq(invoices.id, id)).returning();
+    const [row] = await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Invoice not found" });
-    if (row.clientId) await recalcClientEarnings(row.clientId);
+    if (row.clientId) await recalcClientEarnings(uid, row.clientId);
     res.status(204).end();
   } catch (e) {
     res.status(400).json({ error: String(e) });
   }
 });
 
-router.get("/earnings/summary", async (_req, res) => {
+router.get("/earnings/summary", async (req, res) => {
   try {
-    const all = await db.select().from(invoices);
+    const uid = (req as AuthedRequest).userId;
+    const all = await db.select().from(invoices).where(eq(invoices.userId, uid));
     const paid = all.filter((i) => i.status === "paid");
     const outstanding = all.filter((i) => i.status === "sent" || i.status === "overdue");
     const totalEarned = paid.reduce((s, i) => s + parseFloat(i.amount), 0);

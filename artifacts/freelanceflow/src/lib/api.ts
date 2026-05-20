@@ -1,5 +1,17 @@
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  try {
+    const w = window as unknown as { Clerk?: { session?: { getToken: () => Promise<string | null> } } };
+    const token = await w.Clerk?.session?.getToken?.();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function customFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const authHeaders = await getAuthHeaders();
+  const headers = { ...(init?.headers as Record<string, string> | undefined), ...authHeaders };
+  const res = await fetch(url, { ...init, headers });
   if (!res.ok) {
     let detail: unknown = null;
     try {

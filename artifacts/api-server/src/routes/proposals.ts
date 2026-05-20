@@ -1,20 +1,24 @@
 import { Router } from "express";
 import { db, proposals, jobs } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   GetProposalParams,
   DeleteProposalParams,
   CreateProposalBody,
 } from "@workspace/api-zod";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
-router.get("/proposals", async (_req, res) => {
+router.get("/proposals", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const result = await db
       .select()
       .from(proposals)
+      .where(eq(proposals.userId, uid))
       .orderBy(proposals.createdAt);
     res.json(
       result.map((p) => ({
@@ -33,6 +37,7 @@ router.get("/proposals", async (_req, res) => {
 
 router.post("/proposals", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = CreateProposalBody.parse(req.body);
 
     let jobTitle = body.jobTitle;
@@ -77,6 +82,7 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
     const [proposal] = await db
       .insert(proposals)
       .values({
+        userId: uid,
         jobId: body.jobId ?? null,
         jobTitle,
         content,
@@ -100,11 +106,12 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
 
 router.get("/proposals/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const { id } = GetProposalParams.parse({ id: parseInt(req.params.id) });
     const [proposal] = await db
       .select()
       .from(proposals)
-      .where(eq(proposals.id, id));
+      .where(and(eq(proposals.id, id), eq(proposals.userId, uid)));
     if (!proposal) {
       return res.status(404).json({ error: "Proposal not found" });
     }
@@ -123,10 +130,11 @@ router.get("/proposals/:id", async (req, res) => {
 
 router.delete("/proposals/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const { id } = DeleteProposalParams.parse({ id: parseInt(req.params.id) });
     const [deleted] = await db
       .delete(proposals)
-      .where(eq(proposals.id, id))
+      .where(and(eq(proposals.id, id), eq(proposals.userId, uid)))
       .returning();
     if (!deleted) {
       return res.status(404).json({ error: "Proposal not found" });

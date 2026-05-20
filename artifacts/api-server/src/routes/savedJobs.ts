@@ -1,15 +1,18 @@
 import { Router } from "express";
 import { db, savedJobs, jobs } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import {
   SaveJobBody,
   DeleteSavedJobParams,
 } from "@workspace/api-zod";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
-router.get("/saved-jobs", async (_req, res) => {
+router.get("/saved-jobs", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const result = await db
       .select({
         id: savedJobs.id,
@@ -32,6 +35,7 @@ router.get("/saved-jobs", async (_req, res) => {
       })
       .from(savedJobs)
       .innerJoin(jobs, eq(savedJobs.jobId, jobs.id))
+      .where(eq(savedJobs.userId, uid))
       .orderBy(savedJobs.savedAt);
 
     res.json(
@@ -55,6 +59,7 @@ router.get("/saved-jobs", async (_req, res) => {
 
 router.post("/saved-jobs", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = SaveJobBody.parse(req.body);
     const [job] = await db.select().from(jobs).where(eq(jobs.id, body.jobId));
     if (!job) {
@@ -62,7 +67,7 @@ router.post("/saved-jobs", async (req, res) => {
     }
     const [saved] = await db
       .insert(savedJobs)
-      .values({ jobId: body.jobId })
+      .values({ userId: uid, jobId: body.jobId })
       .returning();
     res.status(201).json({
       ...saved,
@@ -83,10 +88,11 @@ router.post("/saved-jobs", async (req, res) => {
 
 router.delete("/saved-jobs/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const { id } = DeleteSavedJobParams.parse({ id: parseInt(req.params.id) });
     const [deleted] = await db
       .delete(savedJobs)
-      .where(eq(savedJobs.id, id))
+      .where(and(eq(savedJobs.id, id), eq(savedJobs.userId, uid)))
       .returning();
     if (!deleted) {
       return res.status(404).json({ error: "Saved job not found" });

@@ -2,9 +2,11 @@ import { Router } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import { tasks } from "@workspace/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 const upsertSchema = z.object({
   title: z.string().min(1),
@@ -15,17 +17,20 @@ const upsertSchema = z.object({
   clientId: z.number().int().nullable().optional(),
 });
 
-router.get("/tasks", async (_req, res) => {
-  const rows = await db.select().from(tasks).orderBy(desc(tasks.createdAt));
+router.get("/tasks", async (req, res) => {
+  const uid = (req as AuthedRequest).userId;
+  const rows = await db.select().from(tasks).where(eq(tasks.userId, uid)).orderBy(desc(tasks.createdAt));
   res.json(rows);
 });
 
 router.post("/tasks", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const [row] = await db
       .insert(tasks)
       .values({
+        userId: uid,
         title: body.title,
         description: body.description ?? null,
         status: body.status,
@@ -42,6 +47,7 @@ router.post("/tasks", async (req, res) => {
 
 router.patch("/tasks/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id, 10);
     const body = upsertSchema.partial().parse(req.body);
     const updates: Record<string, unknown> = {};
@@ -52,7 +58,7 @@ router.patch("/tasks/:id", async (req, res) => {
     if (body.dueDate !== undefined) updates.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     if (body.clientId !== undefined) updates.clientId = body.clientId;
 
-    const [row] = await db.update(tasks).set(updates).where(eq(tasks.id, id)).returning();
+    const [row] = await db.update(tasks).set(updates).where(and(eq(tasks.id, id), eq(tasks.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json(row);
   } catch (e) {
@@ -61,8 +67,9 @@ router.patch("/tasks/:id", async (req, res) => {
 });
 
 router.delete("/tasks/:id", async (req, res) => {
+  const uid = (req as AuthedRequest).userId;
   const id = parseInt(req.params.id, 10);
-  await db.delete(tasks).where(eq(tasks.id, id));
+  await db.delete(tasks).where(and(eq(tasks.id, id), eq(tasks.userId, uid)));
   res.status(204).end();
 });
 

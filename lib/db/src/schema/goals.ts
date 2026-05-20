@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const goals = pgTable("goals", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   title: text("title").notNull(),
   type: text("type").notNull(),
   target: numeric("target", { precision: 12, scale: 2 }).notNull(),

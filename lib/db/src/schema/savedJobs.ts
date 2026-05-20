@@ -3,8 +3,11 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { jobs } from "./jobs";
 
+import { text } from "drizzle-orm/pg-core";
+
 export const savedJobs = pgTable("saved_jobs", {
   id: serial("id").primaryKey(),
+  userId: text("user_id"),
   jobId: integer("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
   savedAt: timestamp("saved_at", { withTimezone: true }).defaultNow().notNull(),
 });

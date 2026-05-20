@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { db, followups } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 const FollowupBody = z.object({
   clientId: z.number().optional().nullable(),
@@ -21,9 +23,10 @@ function serialize(f: typeof followups.$inferSelect) {
   };
 }
 
-router.get("/followups", async (_req, res) => {
+router.get("/followups", async (req, res) => {
   try {
-    const result = await db.select().from(followups).orderBy(followups.dueDate);
+    const uid = (req as AuthedRequest).userId;
+    const result = await db.select().from(followups).where(eq(followups.userId, uid)).orderBy(followups.dueDate);
     res.json(result.map(serialize));
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -32,10 +35,12 @@ router.get("/followups", async (_req, res) => {
 
 router.post("/followups", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const body = FollowupBody.parse(req.body);
     const [row] = await db
       .insert(followups)
       .values({
+        userId: uid,
         clientId: body.clientId ?? null,
         proposalId: body.proposalId ?? null,
         title: body.title,
@@ -51,6 +56,7 @@ router.post("/followups", async (req, res) => {
 
 router.put("/followups/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = z
       .object({
@@ -62,7 +68,7 @@ router.put("/followups/:id", async (req, res) => {
       .parse(req.body);
     const updates: Record<string, unknown> = { ...body };
     if (body.dueDate) updates.dueDate = new Date(body.dueDate);
-    const [row] = await db.update(followups).set(updates).where(eq(followups.id, id)).returning();
+    const [row] = await db.update(followups).set(updates).where(and(eq(followups.id, id), eq(followups.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Follow-up not found" });
     res.json(serialize(row));
   } catch (e) {
@@ -72,8 +78,9 @@ router.put("/followups/:id", async (req, res) => {
 
 router.delete("/followups/:id", async (req, res) => {
   try {
+    const uid = (req as AuthedRequest).userId;
     const id = parseInt(req.params.id);
-    const [row] = await db.delete(followups).where(eq(followups.id, id)).returning();
+    const [row] = await db.delete(followups).where(and(eq(followups.id, id), eq(followups.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Follow-up not found" });
     res.status(204).end();
   } catch (e) {
