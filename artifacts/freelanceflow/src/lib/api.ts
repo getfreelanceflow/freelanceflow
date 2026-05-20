@@ -90,8 +90,8 @@ export type EarningsSummary = {
   monthly: { month: string; amount: number }[];
 };
 
-const j = (body: unknown) => ({
-  method: "POST",
+const j = (body: unknown, method: "POST" | "PATCH" | "PUT" = "POST") => ({
+  method,
   headers: { "content-type": "application/json" },
   body: JSON.stringify(body),
 });
@@ -221,4 +221,125 @@ export const api = {
         };
       }>;
     }>(`${base}/ai/resume-match`, j(b)),
+
+  generateContract: (b: {
+    clientName: string;
+    projectTitle: string;
+    scope: string;
+    fee: string;
+    timeline?: string;
+    paymentTerms?: string;
+    freelancerName?: string;
+  }) => customFetch<{ contract: string }>(`${base}/ai/contract`, j(b)),
+
+  negotiate: (b: {
+    situation: string;
+    myDesiredOutcome: string;
+    clientPosition?: string;
+    tone?: string;
+  }) => customFetch<{ reply: string }>(`${base}/ai/negotiate`, j(b)),
+
+  skillGap: (b: {
+    currentSkills: string;
+    targetRole: string;
+    yearsExperience?: number;
+  }) =>
+    customFetch<{
+      readiness: number;
+      verdict: string;
+      missingSkills: Array<{ skill: string; priority: string; why: string }>;
+      recommendedSteps: string[];
+      rateProjection: string;
+    }>(`${base}/ai/skill-gap`, j(b)),
+
+  // Time entries
+  listTimeEntries: () => customFetch<TimeEntry[]>(`${base}/time-entries`),
+  createTimeEntry: (b: Partial<TimeEntry>) =>
+    customFetch<TimeEntry>(`${base}/time-entries`, j(b)),
+  updateTimeEntry: (id: number, b: Partial<TimeEntry>) =>
+    customFetch<TimeEntry>(`${base}/time-entries/${id}`, j(b, "PATCH")),
+  deleteTimeEntry: (id: number) =>
+    customFetch<null>(`${base}/time-entries/${id}`, { method: "DELETE" }),
+  timeSummary: () =>
+    customFetch<{ totalHours: number; billableHours: number; entryCount: number }>(
+      `${base}/time-entries/summary`,
+    ),
+
+  // Tasks
+  listTasks: () => customFetch<Task[]>(`${base}/tasks`),
+  createTask: (b: Partial<Task>) => customFetch<Task>(`${base}/tasks`, j(b)),
+  updateTask: (id: number, b: Partial<Task>) =>
+    customFetch<Task>(`${base}/tasks/${id}`, j(b, "PATCH")),
+  deleteTask: (id: number) =>
+    customFetch<null>(`${base}/tasks/${id}`, { method: "DELETE" }),
+
+  // Expenses
+  listExpenses: () => customFetch<Expense[]>(`${base}/expenses`),
+  createExpense: (b: Partial<Expense>) =>
+    customFetch<Expense>(`${base}/expenses`, j(b)),
+  updateExpense: (id: number, b: Partial<Expense>) =>
+    customFetch<Expense>(`${base}/expenses/${id}`, j(b, "PATCH")),
+  deleteExpense: (id: number) =>
+    customFetch<null>(`${base}/expenses/${id}`, { method: "DELETE" }),
+  expensesSummary: () =>
+    customFetch<{
+      total: number;
+      deductible: number;
+      count: number;
+      byCategory: Array<{ category: string; total: number }>;
+    }>(`${base}/expenses/summary`),
+
+  // Goals
+  listGoals: () => customFetch<Goal[]>(`${base}/goals`),
+  createGoal: (b: Partial<Goal>) => customFetch<Goal>(`${base}/goals`, j(b)),
+  updateGoal: (id: number, b: Partial<Goal>) =>
+    customFetch<Goal>(`${base}/goals/${id}`, j(b, "PATCH")),
+  deleteGoal: (id: number) =>
+    customFetch<null>(`${base}/goals/${id}`, { method: "DELETE" }),
+};
+
+export type TimeEntry = {
+  id: number;
+  clientId: number | null;
+  description: string;
+  startedAt: string;
+  endedAt: string | null;
+  hours: string;
+  rate: string | null;
+  billable: boolean;
+  createdAt: string;
+};
+
+export type Task = {
+  id: number;
+  title: string;
+  description: string | null;
+  status: "todo" | "in_progress" | "done";
+  priority: "low" | "medium" | "high";
+  dueDate: string | null;
+  clientId: number | null;
+  createdAt: string;
+};
+
+export type Expense = {
+  id: number;
+  description: string;
+  amount: string;
+  category: string;
+  date: string;
+  taxDeductible: boolean;
+  notes: string | null;
+  createdAt: string;
+};
+
+export type Goal = {
+  id: number;
+  title: string;
+  type: "earnings" | "proposals" | "clients" | "hours" | "custom";
+  target: string;
+  currentValue: string;
+  period: "week" | "month" | "quarter" | "year";
+  startDate: string;
+  endDate: string | null;
+  createdAt: string;
 };

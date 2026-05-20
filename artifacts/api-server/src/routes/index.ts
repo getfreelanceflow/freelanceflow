@@ -11,6 +11,10 @@ import followupsRouter from "./followups";
 import templatesRouter from "./templates";
 import profileRouter from "./profile";
 import aiRouter from "./ai";
+import timeEntriesRouter from "./timeEntries";
+import tasksRouter from "./tasks";
+import expensesRouter from "./expenses";
+import goalsRouter from "./goals";
 
 const router: IRouter = Router();
 
@@ -26,5 +30,9 @@ router.use(followupsRouter);
 router.use(templatesRouter);
 router.use(profileRouter);
 router.use(aiRouter);
+router.use(timeEntriesRouter);
+router.use(tasksRouter);
+router.use(expensesRouter);
+router.use(goalsRouter);
 
 export default router;

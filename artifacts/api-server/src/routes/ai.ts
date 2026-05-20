@@ -292,4 +292,106 @@ Return ONLY the top 10 best-fitting jobs sorted by score descending.`;
   }
 });
 
+router.post("/ai/contract", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        clientName: z.string(),
+        projectTitle: z.string(),
+        scope: z.string(),
+        fee: z.string(),
+        timeline: z.string().optional(),
+        paymentTerms: z.string().optional(),
+        freelancerName: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You draft clear, professional freelance contracts in plain English. Use standard sections. Avoid legalese where possible. Always include a disclaimer that this is a template and should be reviewed by a lawyer.`;
+    const user = `Draft a freelance contract with these details:
+Freelancer: ${body.freelancerName ?? "[Freelancer Name]"}
+Client: ${body.clientName}
+Project: ${body.projectTitle}
+Scope of work: ${body.scope}
+Fee: ${body.fee}
+Timeline: ${body.timeline ?? "To be agreed"}
+Payment terms: ${body.paymentTerms ?? "50% upfront, 50% on completion"}
+
+Include sections: Parties, Scope of Work, Deliverables, Timeline, Compensation, Payment Terms, Revisions, Intellectual Property, Confidentiality, Termination, Limitation of Liability, Signatures. End with a "This is a template..." disclaimer.`;
+
+    const content = await chat(system, user, 2500);
+    res.json({ contract: content });
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/negotiate", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        situation: z.string(),
+        myDesiredOutcome: z.string(),
+        clientPosition: z.string().optional(),
+        tone: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You are a freelance negotiation coach. Write a professional, confident negotiation reply that protects the freelancer's value without burning the relationship.`;
+    const user = `Situation: ${body.situation}
+${body.clientPosition ? `Client position: ${body.clientPosition}` : ""}
+My desired outcome: ${body.myDesiredOutcome}
+Tone: ${body.tone ?? "Confident, respectful, collaborative"}
+
+Write a reply (200-300 words) the freelancer can send. Open with empathy, anchor the value delivered, propose a clear path forward, and offer 1-2 specific compromises if useful. End with a clear next step.`;
+
+    const content = await chat(system, user, 900);
+    res.json({ reply: content });
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/skill-gap", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        currentSkills: z.string(),
+        targetRole: z.string(),
+        yearsExperience: z.number().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You are a freelance career advisor. Return ONLY valid JSON, no markdown.`;
+    const user = `Analyze the gap between this freelancer's current skills and their target role.
+Current skills: ${body.currentSkills}
+Target role: ${body.targetRole}
+${body.yearsExperience !== undefined ? `Years experience: ${body.yearsExperience}` : ""}
+
+Return JSON with this exact shape:
+{
+  "readiness": <0-100 integer>,
+  "verdict": "<one-line summary of readiness>",
+  "missingSkills": [
+    {"skill": "<skill name>", "priority": "high|medium|low", "why": "<short reason>"}
+  ],
+  "recommendedSteps": ["<actionable step>", "<actionable step>", "<actionable step>"],
+  "rateProjection": "<estimate of hourly rate after closing gap>"
+}
+
+Limit missingSkills to top 5.`;
+
+    const content = await chat(system, user, 1200);
+    let parsed: unknown;
+    try {
+      const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+      parsed = JSON.parse(cleaned);
+    } catch {
+      return res.status(500).json({ error: "Failed to parse AI response", raw: content });
+    }
+    res.json(parsed);
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
 export default router;

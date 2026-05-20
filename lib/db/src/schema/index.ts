@@ -8,3 +8,7 @@ export * from "./invoices";
 export * from "./followups";
 export * from "./templates";
 export * from "./profile";
+export * from "./timeEntries";
+export * from "./tasks";
+export * from "./expenses";
+export * from "./goals";

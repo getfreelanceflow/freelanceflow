@@ -23,6 +23,13 @@ import RateCalculator from "@/pages/RateCalculator";
 import CoverLetter from "@/pages/CoverLetter";
 import ProposalScore from "@/pages/ProposalScore";
 import ResumeMatch from "@/pages/ResumeMatch";
+import TimeTracker from "@/pages/TimeTracker";
+import Tasks from "@/pages/Tasks";
+import Expenses from "@/pages/Expenses";
+import Goals from "@/pages/Goals";
+import Contract from "@/pages/Contract";
+import Negotiate from "@/pages/Negotiate";
+import SkillGap from "@/pages/SkillGap";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -99,6 +106,13 @@ function ClerkProviderWithRoutes() {
             <Route path="/rate-calculator"><ProtectedRoute component={RateCalculator} /></Route>
             <Route path="/cover-letter"><ProtectedRoute component={CoverLetter} /></Route>
             <Route path="/proposal-score"><ProtectedRoute component={ProposalScore} /></Route>
+            <Route path="/time"><ProtectedRoute component={TimeTracker} /></Route>
+            <Route path="/tasks"><ProtectedRoute component={Tasks} /></Route>
+            <Route path="/expenses"><ProtectedRoute component={Expenses} /></Route>
+            <Route path="/goals"><ProtectedRoute component={Goals} /></Route>
+            <Route path="/contract"><ProtectedRoute component={Contract} /></Route>
+            <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
+            <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>
 
             <Route component={NotFound} />
           </Switch>
