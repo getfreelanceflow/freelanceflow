@@ -8,6 +8,29 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Upload, Briefcase } from "lucide-react";
+import * as pdfjsLib from "pdfjs-dist";
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import mammoth from "mammoth";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
+async function extractPdf(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let out = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    out += content.items.map((it) => ("str" in it ? (it as { str: string }).str : "")).join(" ") + "\n";
+  }
+  return out.trim();
+}
+
+async function extractDocx(file: File): Promise<string> {
+  const buf = await file.arrayBuffer();
+  const r = await mammoth.extractRawText({ arrayBuffer: buf });
+  return r.value.trim();
+}
 
 type MatchResult = Awaited<ReturnType<typeof api.resumeMatch>>;
 
@@ -18,6 +41,8 @@ export default function ResumeMatch() {
   const [pastExperiences, setPastExperiences] = useState("");
   const [desiredRole, setDesiredRole] = useState("");
   const [result, setResult] = useState<MatchResult | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [parsing, setParsing] = useState(false);
 
   const matchMutation = useMutation({
     mutationFn: () =>
@@ -31,15 +56,36 @@ export default function ResumeMatch() {
     onSuccess: (data) => setResult(data),
   });
 
-  function onFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = String(ev.target?.result ?? "");
+    setFileError(null);
+    setParsing(true);
+    try {
+      const name = file.name.toLowerCase();
+      let text = "";
+      if (name.endsWith(".pdf") || file.type === "application/pdf") {
+        text = await extractPdf(file);
+      } else if (
+        name.endsWith(".docx") ||
+        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        text = await extractDocx(file);
+      } else if (name.endsWith(".doc")) {
+        throw new Error("Old .doc format isn't supported. Save as .docx or .pdf and try again.");
+      } else {
+        text = await file.text();
+      }
+      if (!text.trim()) {
+        throw new Error("Couldn't extract any text from that file. Try a different format or paste the text manually.");
+      }
       setResumeText(text);
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : "Failed to read file");
+    } finally {
+      setParsing(false);
+      e.target.value = "";
+    }
   }
 
   return (
@@ -60,17 +106,21 @@ export default function ResumeMatch() {
           <div className="space-y-2">
             <Label htmlFor="resumeFile" className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
-              Upload .txt resume (optional)
+              Upload resume (PDF, DOCX, or TXT)
             </Label>
             <Input
               id="resumeFile"
               type="file"
-              accept=".txt,text/plain"
+              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
               onChange={onFileUpload}
+              disabled={parsing}
             />
-            <p className="text-xs text-muted-foreground">
-              For PDFs or DOCX, copy/paste the text into the box below.
-            </p>
+            {parsing && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Extracting text…
+              </p>
+            )}
+            {fileError && <p className="text-xs text-destructive">{fileError}</p>}
           </div>
 
           <div className="space-y-2">
