@@ -189,4 +189,36 @@ export const api = {
       strengths: string[];
       improvements: string[];
     }>(`${base}/ai/predict-success`, j(b)),
+
+  resumeMatch: (b: {
+    resumeText: string;
+    age?: number;
+    yearsExperience?: number;
+    pastExperiences?: string;
+    desiredRole?: string;
+  }) =>
+    customFetch<{
+      profile: {
+        summary: string;
+        topSkills: string[];
+        seniority: string;
+        strengths: string[];
+      } | null;
+      matches: Array<{
+        jobId: number;
+        score: number;
+        reason: string;
+        highlights: string[];
+        job?: {
+          id: number;
+          title: string;
+          description: string;
+          category: string;
+          skills: string[];
+          budgetMin: string;
+          budgetMax: string;
+          platform: string;
+        };
+      }>;
+    }>(`${base}/ai/resume-match`, j(b)),
 };

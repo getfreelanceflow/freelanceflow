@@ -22,6 +22,7 @@ import Profile from "@/pages/Profile";
 import RateCalculator from "@/pages/RateCalculator";
 import CoverLetter from "@/pages/CoverLetter";
 import ProposalScore from "@/pages/ProposalScore";
+import ResumeMatch from "@/pages/ResumeMatch";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -84,6 +85,7 @@ function ClerkProviderWithRoutes() {
 
             <Route path="/dashboard"><ProtectedRoute component={Dashboard} /></Route>
             <Route path="/jobs"><ProtectedRoute component={Jobs} /></Route>
+            <Route path="/resume-match"><ProtectedRoute component={ResumeMatch} /></Route>
             <Route path="/jobs/:id"><ProtectedRoute component={JobDetail} /></Route>
             <Route path="/proposals"><ProtectedRoute component={Proposals} /></Route>
             <Route path="/proposals/new"><ProtectedRoute component={ProposalNew} /></Route>

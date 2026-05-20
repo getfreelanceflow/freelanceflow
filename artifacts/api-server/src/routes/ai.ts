@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { z } from "zod";
+import { db } from "@workspace/db";
+import { jobs } from "@workspace/db/schema";
 
 const router = Router();
 
@@ -185,6 +187,106 @@ Return JSON with this exact shape:
       };
     }
     res.json(parsed);
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/resume-match", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        resumeText: z.string().min(20),
+        age: z.number().int().positive().optional(),
+        yearsExperience: z.number().nonnegative().optional(),
+        pastExperiences: z.string().optional(),
+        desiredRole: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const allJobs = await db.select().from(jobs).limit(50);
+
+    if (allJobs.length === 0) {
+      return res.json({ profile: null, matches: [] });
+    }
+
+    const jobList = allJobs.map((j) => ({
+      id: j.id,
+      title: j.title,
+      description: j.description.slice(0, 400),
+      category: j.category,
+      skills: j.skills,
+      budget: `$${j.budgetMin}-$${j.budgetMax}`,
+      platform: j.platform,
+    }));
+
+    const system = `You are an expert freelance career matcher. You read a candidate's resume and rank job postings by fit. Return ONLY valid JSON, no markdown.`;
+    const user = `Candidate info:
+Resume:
+${body.resumeText}
+
+${body.age ? `Age: ${body.age}` : ""}
+${body.yearsExperience !== undefined ? `Years of experience: ${body.yearsExperience}` : ""}
+${body.pastExperiences ? `Past experiences (summary): ${body.pastExperiences}` : ""}
+${body.desiredRole ? `Desired role: ${body.desiredRole}` : ""}
+
+Available jobs (JSON):
+${JSON.stringify(jobList)}
+
+Return JSON with this exact shape:
+{
+  "profile": {
+    "summary": "<2 sentence candidate summary>",
+    "topSkills": ["<skill>", "<skill>", "<skill>", "<skill>", "<skill>"],
+    "seniority": "<junior|mid|senior|expert>",
+    "strengths": ["<strength>", "<strength>", "<strength>"]
+  },
+  "matches": [
+    {
+      "jobId": <number from list>,
+      "score": <0-100>,
+      "reason": "<1 sentence why this fits>",
+      "highlights": ["<matching skill/experience>", "<matching skill/experience>"]
+    }
+  ]
+}
+
+Return ONLY the top 10 best-fitting jobs sorted by score descending.`;
+
+    const content = await chat(system, user, 2000);
+
+    type MatchResult = {
+      profile: {
+        summary: string;
+        topSkills: string[];
+        seniority: string;
+        strengths: string[];
+      } | null;
+      matches: Array<{
+        jobId: number;
+        score: number;
+        reason: string;
+        highlights: string[];
+      }>;
+    };
+
+    let parsed: MatchResult;
+    try {
+      const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+      parsed = JSON.parse(cleaned) as MatchResult;
+    } catch {
+      return res.status(500).json({ error: "Failed to parse AI response", raw: content });
+    }
+
+    const jobMap = new Map(allJobs.map((j) => [j.id, j]));
+    const enriched = parsed.matches
+      .filter((m) => jobMap.has(m.jobId))
+      .map((m) => ({
+        ...m,
+        job: jobMap.get(m.jobId),
+      }));
+
+    res.json({ profile: parsed.profile, matches: enriched });
   } catch (e) {
     res.status(400).json({ error: String(e) });
   }

@@ -15,6 +15,7 @@ import {
   Bell,
   FileStack,
   Target,
+  FileSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +30,7 @@ const navGroups: { label: string; items: { href: string; label: string; icon: ty
     items: [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/jobs", label: "Job Feed", icon: Briefcase },
+      { href: "/resume-match", label: "Resume Match", icon: FileSearch },
       { href: "/proposals", label: "Proposals", icon: FileText },
       { href: "/saved", label: "Saved Jobs", icon: Bookmark },
     ],
