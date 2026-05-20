@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Upload, Briefcase } from "lucide-react";
-import * as pdfjsLib from "pdfjs-dist";
-import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-import mammoth from "mammoth";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
-
 async function extractPdf(file: File): Promise<string> {
+  const pdfjsLib = await import("pdfjs-dist");
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   let out = "";
@@ -27,6 +24,7 @@ async function extractPdf(file: File): Promise<string> {
 }
 
 async function extractDocx(file: File): Promise<string> {
+  const mammoth = (await import("mammoth")).default;
   const buf = await file.arrayBuffer();
   const r = await mammoth.extractRawText({ arrayBuffer: buf });
   return r.value.trim();
@@ -43,6 +41,7 @@ export default function ResumeMatch() {
   const [result, setResult] = useState<MatchResult | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const matchMutation = useMutation({
     mutationFn: () =>
@@ -104,22 +103,30 @@ export default function ResumeMatch() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="resumeFile" className="flex items-center gap-2">
+            <Label className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
               Upload resume (PDF, DOCX, or TXT)
             </Label>
-            <Input
-              id="resumeFile"
+            <input
+              ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              accept=".pdf,.docx,.txt"
               onChange={onFileUpload}
-              disabled={parsing}
+              className="hidden"
             />
-            {parsing && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Loader2 className="h-3 w-3 animate-spin" /> Extracting text…
-              </p>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={parsing}
+              className="w-full md:w-auto"
+            >
+              {parsing ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Extracting text…</>
+              ) : (
+                <><Upload className="mr-2 h-4 w-4" /> Choose file (PDF, DOCX, TXT)</>
+              )}
+            </Button>
             {fileError && <p className="text-xs text-destructive">{fileError}</p>}
           </div>
 
