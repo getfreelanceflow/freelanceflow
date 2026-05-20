@@ -31,6 +31,13 @@ import Contract from "@/pages/Contract";
 import Negotiate from "@/pages/Negotiate";
 import SkillGap from "@/pages/SkillGap";
 import DreamJob from "@/pages/DreamJob";
+import Outreach from "@/pages/Outreach";
+import DiscoveryQuestions from "@/pages/DiscoveryQuestions";
+import ScopeCreep from "@/pages/ScopeCreep";
+import LatePayment from "@/pages/LatePayment";
+import LinkedInPost from "@/pages/LinkedInPost";
+import CaseStudy from "@/pages/CaseStudy";
+import NicheFinder from "@/pages/NicheFinder";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -115,6 +122,13 @@ function ClerkProviderWithRoutes() {
             <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
             <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>
             <Route path="/dream-job"><ProtectedRoute component={DreamJob} /></Route>
+            <Route path="/outreach"><ProtectedRoute component={Outreach} /></Route>
+            <Route path="/discovery-questions"><ProtectedRoute component={DiscoveryQuestions} /></Route>
+            <Route path="/scope-creep"><ProtectedRoute component={ScopeCreep} /></Route>
+            <Route path="/late-payment"><ProtectedRoute component={LatePayment} /></Route>
+            <Route path="/linkedin-post"><ProtectedRoute component={LinkedInPost} /></Route>
+            <Route path="/case-study"><ProtectedRoute component={CaseStudy} /></Route>
+            <Route path="/niche-finder"><ProtectedRoute component={NicheFinder} /></Route>
 
             <Route component={NotFound} />
           </Switch>

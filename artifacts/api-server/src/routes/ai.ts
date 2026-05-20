@@ -3,8 +3,10 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 import { z } from "zod";
 import { db } from "@workspace/db";
 import { jobs } from "@workspace/db/schema";
+import { requireUser } from "../lib/requireUser";
 
 const router = Router();
+router.use(requireUser);
 
 async function chat(system: string, user: string, maxTokens = 800): Promise<string> {
   const completion = await openai.chat.completions.create({
@@ -389,6 +391,282 @@ Limit missingSkills to top 5.`;
       return res.status(500).json({ error: "Failed to parse AI response", raw: content });
     }
     res.json(parsed);
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/outreach", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        targetCompany: z.string().min(1),
+        targetPerson: z.string().optional(),
+        targetRole: z.string().optional(),
+        myOffer: z.string().min(3),
+        valueProp: z.string().optional(),
+        tone: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You write cold outreach emails for freelancers that get replies. Short, specific, personalized, value-first. Never generic. Never desperate.`;
+    const user = `Write a cold outreach email.
+Target company: ${body.targetCompany}
+${body.targetPerson ? `Target person: ${body.targetPerson}` : ""}
+${body.targetRole ? `Their role: ${body.targetRole}` : ""}
+My offer: ${body.myOffer}
+${body.valueProp ? `My differentiator: ${body.valueProp}` : ""}
+Tone: ${body.tone ?? "Direct, warm, confident"}
+
+Output JSON:
+{
+  "subject": "compelling subject line under 60 chars",
+  "email": "the email body (3-5 short paragraphs, max 150 words)",
+  "followUp1": "a 2-sentence follow-up to send 4 days later",
+  "followUp2": "a 1-sentence breakup email to send 10 days later"
+}`;
+
+    const content = await chat(system, user, 1200);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/discovery-questions", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        projectType: z.string().min(1),
+        clientIndustry: z.string().optional(),
+        budget: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You generate sales discovery questions that uncover client pain, budget, decision process, and timeline — without sounding like an interrogation. Each question should be open-ended and strategic.`;
+    const user = `Generate discovery call questions for a freelancer about to take a sales call.
+Project type: ${body.projectType}
+${body.clientIndustry ? `Client industry: ${body.clientIndustry}` : ""}
+${body.budget ? `Mentioned budget: ${body.budget}` : ""}
+
+Output JSON:
+{
+  "sections": [
+    {
+      "category": "Goals & Outcomes",
+      "questions": ["question 1", "question 2", "question 3"]
+    },
+    { "category": "Pain & Problems", "questions": [...] },
+    { "category": "Budget & Authority", "questions": [...] },
+    { "category": "Timeline & Process", "questions": [...] },
+    { "category": "Risk & Red Flags", "questions": [...] }
+  ],
+  "closingTips": ["tip 1", "tip 2", "tip 3"]
+}
+
+3-5 questions per category, sharp and specific.`;
+
+    const content = await chat(system, user, 1500);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/scope-creep", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        originalScope: z.string().min(3),
+        clientMessage: z.string().min(3),
+      })
+      .parse(req.body);
+
+    const system = `You are an expert at protecting freelancers from scope creep. You analyze client messages against the original project scope and identify additions, then draft a professional response.`;
+    const user = `Original project scope: ${body.originalScope}
+
+New client message: ${body.clientMessage}
+
+Output JSON:
+{
+  "scopeCreepDetected": boolean,
+  "severity": "none" | "minor" | "moderate" | "major",
+  "additions": ["new item 1 not in original scope", ...],
+  "estimatedExtraHours": number,
+  "estimatedExtraCost": "string like '$500-1500'",
+  "recommendation": "1-2 sentences on how to handle it",
+  "responseTemplate": "a polite, firm email response the freelancer can send (3-5 sentences) that either re-scopes or quotes the extra work"
+}`;
+
+    const content = await chat(system, user, 1200);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/late-payment", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        clientName: z.string().min(1),
+        invoiceNumber: z.string().optional(),
+        amount: z.string().optional(),
+        daysOverdue: z.number().int().nonnegative(),
+        previousRelationship: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You write payment-chase emails for freelancers. The tone escalates appropriately with days overdue but always stays professional. Never threatening. Always specific.`;
+    const user = `Generate payment reminder emails.
+Client: ${body.clientName}
+${body.invoiceNumber ? `Invoice: ${body.invoiceNumber}` : ""}
+${body.amount ? `Amount: ${body.amount}` : ""}
+Days overdue: ${body.daysOverdue}
+${body.previousRelationship ? `History: ${body.previousRelationship}` : ""}
+
+Output JSON:
+{
+  "currentEmail": { "subject": "...", "body": "appropriate for ${body.daysOverdue} days overdue" },
+  "escalationLadder": [
+    { "stage": "Friendly nudge (day 1-7)", "subject": "...", "body": "..." },
+    { "stage": "Firm reminder (day 14)", "subject": "...", "body": "..." },
+    { "stage": "Final notice (day 30)", "subject": "...", "body": "..." },
+    { "stage": "Collections warning (day 45)", "subject": "...", "body": "..." }
+  ],
+  "tips": ["practical tip 1", "tip 2", "tip 3"]
+}`;
+
+    const content = await chat(system, user, 1800);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/linkedin-post", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        topic: z.string().min(3),
+        angle: z.string().optional(),
+        myRole: z.string().optional(),
+        cta: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You write scroll-stopping LinkedIn posts for freelancers. Strong hooks, short lines, white space, story-driven. No corporate jargon. No hashtag spam (max 3).`;
+    const user = `Write 3 LinkedIn post variations.
+Topic: ${body.topic}
+${body.angle ? `Angle: ${body.angle}` : ""}
+${body.myRole ? `My role: ${body.myRole}` : ""}
+${body.cta ? `Call to action: ${body.cta}` : ""}
+
+Output JSON:
+{
+  "posts": [
+    { "style": "Story", "hook": "...", "body": "full post (150-250 words, with line breaks as \\n\\n)", "hashtags": ["tag1", "tag2"] },
+    { "style": "Contrarian Take", ... },
+    { "style": "Tactical How-to", ... }
+  ],
+  "hookAlternatives": ["alt hook 1", "alt hook 2", "alt hook 3", "alt hook 4", "alt hook 5"]
+}`;
+
+    const content = await chat(system, user, 2000);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/case-study", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        projectName: z.string().min(1),
+        client: z.string().optional(),
+        challenge: z.string().min(3),
+        solution: z.string().min(3),
+        results: z.string().min(3),
+        skills: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You turn freelance projects into portfolio case studies that win clients. Lead with the result, structure for skim-readers, quantify impact wherever possible.`;
+    const user = `Write a portfolio case study.
+Project: ${body.projectName}
+${body.client ? `Client: ${body.client}` : ""}
+Challenge: ${body.challenge}
+Solution: ${body.solution}
+Results: ${body.results}
+${body.skills ? `Skills used: ${body.skills}` : ""}
+
+Output JSON:
+{
+  "headline": "outcome-led headline (under 12 words)",
+  "subheadline": "one-line context",
+  "tldr": "2-sentence summary recruiters/clients will skim",
+  "challenge": "rewritten challenge section (3-4 sentences)",
+  "approach": "rewritten approach section (4-6 sentences)",
+  "results": "results section with bullet stats",
+  "resultsBullets": ["stat 1", "stat 2", "stat 3"],
+  "testimonialPrompt": "a draft testimonial you could ask the client to approve and quote",
+  "skillsHighlighted": ["skill 1", "skill 2", "skill 3", "skill 4"]
+}`;
+
+    const content = await chat(system, user, 1800);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
+  } catch (e) {
+    res.status(400).json({ error: String(e) });
+  }
+});
+
+router.post("/ai/niche-finder", async (req, res) => {
+  try {
+    const body = z
+      .object({
+        skills: z.string().min(3),
+        pastWork: z.string().optional(),
+        interests: z.string().optional(),
+        income: z.string().optional(),
+      })
+      .parse(req.body);
+
+    const system = `You are a freelance positioning strategist. You find profitable, defensible niches at the intersection of a freelancer's skills, interests, and market demand.`;
+    const user = `Find niches for this freelancer.
+Skills: ${body.skills}
+${body.pastWork ? `Past work: ${body.pastWork}` : ""}
+${body.interests ? `Interests: ${body.interests}` : ""}
+${body.income ? `Income goal: ${body.income}` : ""}
+
+Output JSON:
+{
+  "niches": [
+    {
+      "name": "niche name",
+      "tagline": "1-line positioning statement",
+      "whyItFits": "2 sentences",
+      "marketDemand": "low" | "medium" | "high" | "very high",
+      "competition": "low" | "medium" | "high",
+      "avgProjectSize": "$X-Y range",
+      "idealClients": ["client type 1", "client type 2", "client type 3"],
+      "firstFiveActions": ["action 1", "action 2", "action 3", "action 4", "action 5"]
+    }
+  ],
+  "positioning": "elevator pitch you can use immediately"
+}
+
+Return 4 niches, ordered by profitability potential.`;
+
+    const content = await chat(system, user, 2000);
+    const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
+    res.json(JSON.parse(cleaned));
   } catch (e) {
     res.status(400).json({ error: String(e) });
   }

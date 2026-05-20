@@ -24,6 +24,12 @@ import {
   MessageSquare,
   BookOpen,
   Sparkles,
+  Send,
+  MessagesSquare,
+  Shield,
+  AlarmClock,
+  Linkedin,
+  BookOpenCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -65,11 +71,18 @@ const navGroups: { label: string; items: { href: string; label: string; icon: ty
     label: "AI Tools",
     items: [
       { href: "/dream-job", label: "Dream Job Finder", icon: Sparkles },
+      { href: "/niche-finder", label: "Niche Finder", icon: Target },
+      { href: "/outreach", label: "Cold Outreach", icon: Send },
       { href: "/cover-letter", label: "Cover Letter", icon: Mail },
       { href: "/proposal-score", label: "Score Proposal", icon: Target },
-      { href: "/rate-calculator", label: "Rate Calculator", icon: Calculator },
-      { href: "/contract", label: "Contract Gen", icon: FileSignature },
+      { href: "/discovery-questions", label: "Discovery Qs", icon: MessagesSquare },
       { href: "/negotiate", label: "Negotiate", icon: MessageSquare },
+      { href: "/scope-creep", label: "Scope Creep", icon: Shield },
+      { href: "/late-payment", label: "Chase Payment", icon: AlarmClock },
+      { href: "/linkedin-post", label: "LinkedIn Posts", icon: Linkedin },
+      { href: "/case-study", label: "Case Study", icon: BookOpenCheck },
+      { href: "/contract", label: "Contract Gen", icon: FileSignature },
+      { href: "/rate-calculator", label: "Rate Calculator", icon: Calculator },
       { href: "/skill-gap", label: "Skill Gap", icon: BookOpen },
       { href: "/templates", label: "Templates", icon: FileStack },
       { href: "/profile", label: "Profile & Bio", icon: User },
