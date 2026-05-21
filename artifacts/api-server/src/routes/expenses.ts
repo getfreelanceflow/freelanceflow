@@ -18,14 +18,14 @@ const upsertSchema = z.object({
 });
 
 router.get("/expenses", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const rows = await db.select().from(expenses).where(eq(expenses.userId, uid)).orderBy(desc(expenses.date));
   res.json(rows);
 });
 
 router.post("/expenses", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const [row] = await db
       .insert(expenses)
@@ -47,7 +47,7 @@ router.post("/expenses", async (req, res) => {
 
 router.patch("/expenses/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id, 10);
     const body = upsertSchema.partial().parse(req.body);
     const updates: Record<string, unknown> = {};
@@ -67,14 +67,14 @@ router.patch("/expenses/:id", async (req, res) => {
 });
 
 router.delete("/expenses/:id", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const id = parseInt(req.params.id, 10);
   await db.delete(expenses).where(and(eq(expenses.id, id), eq(expenses.userId, uid)));
   res.status(204).end();
 });
 
 router.get("/expenses/summary", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const byCategory = await db
     .select({
       category: expenses.category,

@@ -14,7 +14,7 @@ router.use(requireUser);
 
 router.get("/proposals", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db
       .select()
       .from(proposals)
@@ -37,7 +37,7 @@ router.get("/proposals", async (req, res) => {
 
 router.post("/proposals", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = CreateProposalBody.parse(req.body);
 
     let jobTitle = body.jobTitle;
@@ -106,7 +106,7 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
 
 router.get("/proposals/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const { id } = GetProposalParams.parse({ id: parseInt(req.params.id) });
     const [proposal] = await db
       .select()
@@ -130,7 +130,7 @@ router.get("/proposals/:id", async (req, res) => {
 
 router.delete("/proposals/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const { id } = DeleteProposalParams.parse({ id: parseInt(req.params.id) });
     const [deleted] = await db
       .delete(proposals)

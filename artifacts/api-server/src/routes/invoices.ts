@@ -45,7 +45,7 @@ async function recalcClientEarnings(uid: string, clientId: number) {
 
 router.get("/invoices", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db.select().from(invoices).where(eq(invoices.userId, uid)).orderBy(invoices.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
@@ -55,7 +55,7 @@ router.get("/invoices", async (req, res) => {
 
 router.post("/invoices", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = InvoiceBody.parse(req.body);
     const [row] = await db
       .insert(invoices)
@@ -82,7 +82,7 @@ router.post("/invoices", async (req, res) => {
 
 router.get("/invoices/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.select().from(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, uid)));
     if (!row) return res.status(404).json({ error: "Invoice not found" });
@@ -94,7 +94,7 @@ router.get("/invoices/:id", async (req, res) => {
 
 router.put("/invoices/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = InvoiceBody.partial().parse(req.body);
     const updates: Record<string, unknown> = { ...body };
@@ -113,7 +113,7 @@ router.put("/invoices/:id", async (req, res) => {
 
 router.delete("/invoices/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.delete(invoices).where(and(eq(invoices.id, id), eq(invoices.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Invoice not found" });
@@ -126,7 +126,7 @@ router.delete("/invoices/:id", async (req, res) => {
 
 router.get("/earnings/summary", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const all = await db.select().from(invoices).where(eq(invoices.userId, uid));
     const paid = all.filter((i) => i.status === "paid");
     const outstanding = all.filter((i) => i.status === "sent" || i.status === "overdue");

@@ -19,14 +19,14 @@ const upsertSchema = z.object({
 });
 
 router.get("/goals", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const rows = await db.select().from(goals).where(eq(goals.userId, uid)).orderBy(desc(goals.createdAt));
   res.json(rows);
 });
 
 router.post("/goals", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const [row] = await db
       .insert(goals)
@@ -49,7 +49,7 @@ router.post("/goals", async (req, res) => {
 
 router.patch("/goals/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id, 10);
     const body = upsertSchema.partial().parse(req.body);
     const updates: Record<string, unknown> = {};
@@ -70,7 +70,7 @@ router.patch("/goals/:id", async (req, res) => {
 });
 
 router.delete("/goals/:id", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const id = parseInt(req.params.id, 10);
   await db.delete(goals).where(and(eq(goals.id, id), eq(goals.userId, uid)));
   res.status(204).end();

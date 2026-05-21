@@ -25,7 +25,7 @@ function serialize(f: typeof followups.$inferSelect) {
 
 router.get("/followups", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db.select().from(followups).where(eq(followups.userId, uid)).orderBy(followups.dueDate);
     res.json(result.map(serialize));
   } catch (e) {
@@ -35,7 +35,7 @@ router.get("/followups", async (req, res) => {
 
 router.post("/followups", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = FollowupBody.parse(req.body);
     const [row] = await db
       .insert(followups)
@@ -56,7 +56,7 @@ router.post("/followups", async (req, res) => {
 
 router.put("/followups/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = z
       .object({
@@ -78,7 +78,7 @@ router.put("/followups/:id", async (req, res) => {
 
 router.delete("/followups/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.delete(followups).where(and(eq(followups.id, id), eq(followups.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Follow-up not found" });

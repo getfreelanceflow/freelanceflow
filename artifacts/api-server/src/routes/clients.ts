@@ -27,7 +27,7 @@ function serialize(c: typeof clients.$inferSelect) {
 
 router.get("/clients", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db.select().from(clients).where(eq(clients.userId, uid)).orderBy(clients.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
@@ -37,7 +37,7 @@ router.get("/clients", async (req, res) => {
 
 router.post("/clients", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = ClientBody.parse(req.body);
     const [row] = await db
       .insert(clients)
@@ -59,7 +59,7 @@ router.post("/clients", async (req, res) => {
 
 router.get("/clients/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.select().from(clients).where(and(eq(clients.id, id), eq(clients.userId, uid)));
     if (!row) return res.status(404).json({ error: "Client not found" });
@@ -82,7 +82,7 @@ router.get("/clients/:id", async (req, res) => {
 
 router.put("/clients/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = ClientBody.partial().parse(req.body);
     const updates: Record<string, unknown> = { ...body };
@@ -97,7 +97,7 @@ router.put("/clients/:id", async (req, res) => {
 
 router.delete("/clients/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.delete(clients).where(and(eq(clients.id, id), eq(clients.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Client not found" });

@@ -19,14 +19,14 @@ const upsertSchema = z.object({
 });
 
 router.get("/time-entries", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const rows = await db.select().from(timeEntries).where(eq(timeEntries.userId, uid)).orderBy(desc(timeEntries.startedAt));
   res.json(rows);
 });
 
 router.post("/time-entries", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const [row] = await db
       .insert(timeEntries)
@@ -49,7 +49,7 @@ router.post("/time-entries", async (req, res) => {
 
 router.patch("/time-entries/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id, 10);
     const body = upsertSchema.partial().parse(req.body);
     const updates: Record<string, unknown> = {};
@@ -74,14 +74,14 @@ router.patch("/time-entries/:id", async (req, res) => {
 });
 
 router.delete("/time-entries/:id", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const id = parseInt(req.params.id, 10);
   await db.delete(timeEntries).where(and(eq(timeEntries.id, id), eq(timeEntries.userId, uid)));
   res.status(204).end();
 });
 
 router.get("/time-entries/summary", async (req, res) => {
-  const uid = (req as AuthedRequest).userId;
+  const uid = (req as unknown as AuthedRequest).userId;
   const rows = await db
     .select({
       totalHours: sql<string>`COALESCE(SUM(${timeEntries.hours}), 0)`,

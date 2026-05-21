@@ -12,7 +12,7 @@ router.use(requireUser);
 
 router.get("/saved-jobs", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db
       .select({
         id: savedJobs.id,
@@ -59,7 +59,7 @@ router.get("/saved-jobs", async (req, res) => {
 
 router.post("/saved-jobs", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = SaveJobBody.parse(req.body);
     const [job] = await db.select().from(jobs).where(eq(jobs.id, body.jobId));
     if (!job) {
@@ -88,7 +88,7 @@ router.post("/saved-jobs", async (req, res) => {
 
 router.delete("/saved-jobs/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const { id } = DeleteSavedJobParams.parse({ id: parseInt(req.params.id) });
     const [deleted] = await db
       .delete(savedJobs)

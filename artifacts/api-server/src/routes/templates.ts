@@ -19,7 +19,7 @@ function serialize(t: typeof templates.$inferSelect) {
 
 router.get("/templates", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const result = await db.select().from(templates).where(eq(templates.userId, uid)).orderBy(templates.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
@@ -29,7 +29,7 @@ router.get("/templates", async (req, res) => {
 
 router.post("/templates", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const body = TemplateBody.parse(req.body);
     const [row] = await db.insert(templates).values({ ...body, userId: uid }).returning();
     res.status(201).json(serialize(row));
@@ -40,7 +40,7 @@ router.post("/templates", async (req, res) => {
 
 router.put("/templates/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const body = TemplateBody.partial().parse(req.body);
     const [row] = await db.update(templates).set(body).where(and(eq(templates.id, id), eq(templates.userId, uid))).returning();
@@ -53,7 +53,7 @@ router.put("/templates/:id", async (req, res) => {
 
 router.delete("/templates/:id", async (req, res) => {
   try {
-    const uid = (req as AuthedRequest).userId;
+    const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(req.params.id);
     const [row] = await db.delete(templates).where(and(eq(templates.id, id), eq(templates.userId, uid))).returning();
     if (!row) return res.status(404).json({ error: "Template not found" });
