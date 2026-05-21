@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { globalSearch } from "@workspace/api-client-react";
+import { useT } from "@/i18n/LanguageContext";
 
 interface Hit {
   id: number;
@@ -36,6 +37,7 @@ export default function GlobalSearch() {
   const [results, setResults] = useState<Results>(EMPTY);
   const [loading, setLoading] = useState(false);
   const [, navigate] = useLocation();
+  const { t } = useT();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -112,7 +114,7 @@ export default function GlobalSearch() {
       >
         <span className="flex items-center gap-2">
           <Search className="h-4 w-4" />
-          Search everything…
+          {t("header.searchPlaceholder")}
         </span>
         <KbdGroup className="hidden sm:flex">
           <Kbd>⌘</Kbd>
@@ -121,21 +123,21 @@ export default function GlobalSearch() {
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen} shouldFilter={false}>
         <CommandInput
-          placeholder="Search jobs, clients, invoices, proposals…"
+          placeholder={t("header.commandPaletteInput")}
           value={q}
           onValueChange={setQ}
         />
         <CommandList>
           {q.trim().length === 0 ? (
-            <CommandEmpty>Type to search across your workspace.</CommandEmpty>
+            <CommandEmpty>{t("header.searchEmpty")}</CommandEmpty>
           ) : loading ? (
-            <CommandEmpty>Searching…</CommandEmpty>
+            <CommandEmpty>{t("header.searching")}</CommandEmpty>
           ) : totalHits === 0 ? (
-            <CommandEmpty>No results for "{q}".</CommandEmpty>
+            <CommandEmpty>{t("header.noResults", { q })}</CommandEmpty>
           ) : null}
 
           {results.jobs.length > 0 && (
-            <CommandGroup heading="Jobs">
+            <CommandGroup heading={t("search.jobs")}>
               {results.jobs.map((h) => (
                 <CommandItem key={`job-${h.id}`} value={`job-${h.id}`} onSelect={() => go(h.href)}>
                   <div className="flex flex-col">
@@ -152,7 +154,7 @@ export default function GlobalSearch() {
           {results.clients.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Clients">
+              <CommandGroup heading={t("search.clients")}>
                 {results.clients.map((h) => (
                   <CommandItem key={`client-${h.id}`} value={`client-${h.id}`} onSelect={() => go(h.href)}>
                     <div className="flex flex-col">
@@ -170,7 +172,7 @@ export default function GlobalSearch() {
           {results.invoices.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Invoices">
+              <CommandGroup heading={t("search.invoices")}>
                 {results.invoices.map((h) => (
                   <CommandItem key={`inv-${h.id}`} value={`inv-${h.id}`} onSelect={() => go(h.href)}>
                     <div className="flex flex-col">
@@ -188,7 +190,7 @@ export default function GlobalSearch() {
           {results.proposals.length > 0 && (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Proposals">
+              <CommandGroup heading={t("search.proposals")}>
                 {results.proposals.map((h) => (
                   <CommandItem key={`p-${h.id}`} value={`p-${h.id}`} onSelect={() => go(h.href)}>
                     <div className="flex flex-col">

@@ -36,66 +36,69 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationsBell from "@/components/NotificationsBell";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useT } from "@/i18n/LanguageContext";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const navGroups: { label: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+const navGroups: { labelKey: string; items: { href: string; labelKey: string; icon: typeof LayoutDashboard }[] }[] = [
   {
-    label: "Work",
+    labelKey: "nav.group.work",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-      { href: "/jobs", label: "Job Feed", icon: Briefcase },
-      { href: "/resume-match", label: "Resume Match", icon: FileSearch },
-      { href: "/proposals", label: "Proposals", icon: FileText },
-      { href: "/saved", label: "Saved Jobs", icon: Bookmark },
+      { href: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+      { href: "/jobs", labelKey: "nav.jobFeed", icon: Briefcase },
+      { href: "/resume-match", labelKey: "nav.resumeMatch", icon: FileSearch },
+      { href: "/proposals", labelKey: "nav.proposals", icon: FileText },
+      { href: "/saved", labelKey: "nav.savedJobs", icon: Bookmark },
     ],
   },
   {
-    label: "Business",
+    labelKey: "nav.group.business",
     items: [
-      { href: "/clients", label: "Clients", icon: Users },
-      { href: "/invoices", label: "Invoices", icon: Receipt },
-      { href: "/earnings", label: "Earnings", icon: TrendingUp },
-      { href: "/expenses", label: "Expenses", icon: Wallet },
-      { href: "/followups", label: "Follow-ups", icon: Bell },
+      { href: "/clients", labelKey: "nav.clients", icon: Users },
+      { href: "/invoices", labelKey: "nav.invoices", icon: Receipt },
+      { href: "/earnings", labelKey: "nav.earnings", icon: TrendingUp },
+      { href: "/expenses", labelKey: "nav.expenses", icon: Wallet },
+      { href: "/followups", labelKey: "nav.followups", icon: Bell },
     ],
   },
   {
-    label: "Productivity",
+    labelKey: "nav.group.productivity",
     items: [
-      { href: "/time", label: "Time Tracker", icon: Clock },
-      { href: "/tasks", label: "Tasks", icon: CheckSquare },
-      { href: "/goals", label: "Goals", icon: Trophy },
+      { href: "/time", labelKey: "nav.timeTracker", icon: Clock },
+      { href: "/tasks", labelKey: "nav.tasks", icon: CheckSquare },
+      { href: "/goals", labelKey: "nav.goals", icon: Trophy },
     ],
   },
   {
-    label: "AI Tools",
+    labelKey: "nav.group.aiTools",
     items: [
-      { href: "/dream-job", label: "Dream Job Finder", icon: Sparkles },
-      { href: "/niche-finder", label: "Niche Finder", icon: Target },
-      { href: "/outreach", label: "Cold Outreach", icon: Send },
-      { href: "/cover-letter", label: "Cover Letter", icon: Mail },
-      { href: "/proposal-score", label: "Score Proposal", icon: Target },
-      { href: "/discovery-questions", label: "Discovery Qs", icon: MessagesSquare },
-      { href: "/negotiate", label: "Negotiate", icon: MessageSquare },
-      { href: "/scope-creep", label: "Scope Creep", icon: Shield },
-      { href: "/late-payment", label: "Chase Payment", icon: AlarmClock },
-      { href: "/linkedin-post", label: "LinkedIn Posts", icon: Linkedin },
-      { href: "/case-study", label: "Case Study", icon: BookOpenCheck },
-      { href: "/contract", label: "Contract Gen", icon: FileSignature },
-      { href: "/rate-calculator", label: "Rate Calculator", icon: Calculator },
-      { href: "/skill-gap", label: "Skill Gap", icon: BookOpen },
-      { href: "/templates", label: "Templates", icon: FileStack },
-      { href: "/profile", label: "Profile & Bio", icon: User },
+      { href: "/dream-job", labelKey: "nav.dreamJob", icon: Sparkles },
+      { href: "/niche-finder", labelKey: "nav.nicheFinder", icon: Target },
+      { href: "/outreach", labelKey: "nav.outreach", icon: Send },
+      { href: "/cover-letter", labelKey: "nav.coverLetter", icon: Mail },
+      { href: "/proposal-score", labelKey: "nav.proposalScore", icon: Target },
+      { href: "/discovery-questions", labelKey: "nav.discoveryQuestions", icon: MessagesSquare },
+      { href: "/negotiate", labelKey: "nav.negotiate", icon: MessageSquare },
+      { href: "/scope-creep", labelKey: "nav.scopeCreep", icon: Shield },
+      { href: "/late-payment", labelKey: "nav.latePayment", icon: AlarmClock },
+      { href: "/linkedin-post", labelKey: "nav.linkedinPost", icon: Linkedin },
+      { href: "/case-study", labelKey: "nav.caseStudy", icon: BookOpenCheck },
+      { href: "/contract", labelKey: "nav.contract", icon: FileSignature },
+      { href: "/rate-calculator", labelKey: "nav.rateCalculator", icon: Calculator },
+      { href: "/skill-gap", labelKey: "nav.skillGap", icon: BookOpen },
+      { href: "/templates", labelKey: "nav.templates", icon: FileStack },
+      { href: "/profile", labelKey: "nav.profile", icon: User },
     ],
   },
 ];
 
 function AccountLabel() {
   const { user } = useUser();
-  const label = user?.primaryEmailAddress?.emailAddress ?? user?.fullName ?? "My Account";
+  const { t } = useT();
+  const label = user?.primaryEmailAddress?.emailAddress ?? user?.fullName ?? t("account.myAccount");
   return (
     <span className="truncate text-sm font-medium text-sidebar-foreground" title={label}>
       {label}
@@ -105,6 +108,7 @@ function AccountLabel() {
 
 function SignOutButton() {
   const { signOut } = useClerk();
+  const { t } = useT();
   return (
     <Button
       variant="outline"
@@ -113,13 +117,14 @@ function SignOutButton() {
       onClick={() => signOut({ redirectUrl: "/" })}
     >
       <LogOut className="h-4 w-4" />
-      Sign out
+      {t("account.signOut")}
     </Button>
   );
 }
 
 function SidebarNav() {
   const [location] = useLocation();
+  const { t } = useT();
 
   return (
     <div className="flex h-full flex-col">
@@ -130,9 +135,9 @@ function SidebarNav() {
       </div>
       <nav className="flex-1 space-y-4 px-4 py-4 overflow-y-auto">
         {navGroups.map((group) => (
-          <div key={group.label} className="space-y-1">
+          <div key={group.labelKey} className="space-y-1">
             <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-              {group.label}
+              {t(group.labelKey)}
             </p>
             {group.items.map((item) => {
               const isActive =
@@ -147,7 +152,7 @@ function SidebarNav() {
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </div>
                 </Link>
               );
@@ -167,6 +172,7 @@ function SidebarNav() {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const { t } = useT();
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <aside className="hidden w-64 border-r border-sidebar-border bg-sidebar md:block">
@@ -180,7 +186,7 @@ export default function Layout({ children }: LayoutProps) {
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon">
                   <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle navigation menu</span>
+                  <span className="sr-only">{t("common.toggleNav")}</span>
                 </Button>
               </SheetTrigger>
               <SheetContent
@@ -196,6 +202,7 @@ export default function Layout({ children }: LayoutProps) {
             <GlobalSearch />
           </div>
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <NotificationsBell />
           </div>
         </header>

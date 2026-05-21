@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useListNotifications, getListNotificationsQueryKey } from "@workspace/api-client-react";
+import { useT } from "@/i18n/LanguageContext";
 
 const READ_KEY = "ff_notifications_read_v1";
 
@@ -44,6 +45,7 @@ function iconFor(kind: string) {
 }
 
 export default function NotificationsBell() {
+  const { t } = useT();
   const { data, isLoading } = useListNotifications({
     query: {
       queryKey: getListNotificationsQueryKey(),
@@ -80,7 +82,7 @@ export default function NotificationsBell() {
           variant="ghost"
           size="icon"
           className="relative"
-          aria-label="Notifications"
+          aria-label={t("header.notifications")}
           data-testid="notifications-bell"
         >
           <Bell className="h-5 w-5" />
@@ -96,21 +98,21 @@ export default function NotificationsBell() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0">
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <span className="text-sm font-semibold">Notifications</span>
+          <span className="text-sm font-semibold">{t("header.notifications")}</span>
           {items.length > 0 ? (
             <span className="text-xs text-muted-foreground">
-              {unread.length > 0 ? `${unread.length} new` : "All caught up"}
+              {unread.length > 0 ? t("header.unreadCount", { n: unread.length }) : t("header.allCaughtUp")}
             </span>
           ) : null}
         </div>
         <ScrollArea className="h-80">
           {isLoading ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              Loading…
+              {t("header.loading")}
             </div>
           ) : items.length === 0 ? (
             <div className="p-6 text-center text-sm text-muted-foreground">
-              You're all caught up.
+              {t("header.allCaughtUp")}
             </div>
           ) : (
             <ul className="divide-y">

@@ -16,12 +16,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin } from "lucide-react";
+import { useT } from "@/i18n/LanguageContext";
 
 const POSTED_WITHIN_OPTIONS = [
-  { value: "any", label: "Any time" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
+  { value: "any", labelKey: "jobs.postedAny" },
+  { value: "24h", labelKey: "jobs.posted24h" },
+  { value: "7d", labelKey: "jobs.posted7d" },
+  { value: "30d", labelKey: "jobs.posted30d" },
 ] as const;
 
 const PLATFORM_OPTIONS = [
@@ -36,15 +37,16 @@ const PLATFORM_OPTIONS = [
 type PostedWithin = (typeof POSTED_WITHIN_OPTIONS)[number]["value"];
 
 const JOB_TYPE_OPTIONS = [
-  { value: "any", label: "Remote & in-person" },
-  { value: "remote", label: "Remote only" },
-  { value: "onsite", label: "In-person (near me)" },
-  { value: "hybrid", label: "Hybrid" },
+  { value: "any", labelKey: "jobs.jobTypeAny" },
+  { value: "remote", labelKey: "jobs.jobTypeRemote" },
+  { value: "onsite", labelKey: "jobs.jobTypeOnsite" },
+  { value: "hybrid", labelKey: "jobs.jobTypeHybrid" },
 ] as const;
 
 type JobType = (typeof JOB_TYPE_OPTIONS)[number]["value"];
 
 export default function Jobs() {
+  const { t } = useT();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -130,15 +132,15 @@ export default function Jobs() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Job Feed</h1>
-        <p className="text-muted-foreground mt-2">Find your next freelance gig with AI-powered matching.</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t("jobs.title")}</h1>
+        <p className="text-muted-foreground mt-2">{t("jobs.subtitle")}</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by title, skill, category, client, or platform..."
+            placeholder={t("jobs.searchPlaceholder")}
             className="pl-9 pr-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -151,7 +153,7 @@ export default function Jobs() {
               type="button"
               onClick={() => setSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label="Clear search"
+              aria-label={t("jobs.clearSearch")}
             >
               <X className="h-4 w-4" />
             </button>
@@ -159,10 +161,10 @@ export default function Jobs() {
         </div>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="w-full sm:w-[200px]">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder={t("jobs.category")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("jobs.allCategories")}</SelectItem>
             <SelectItem value="Web Development">Web Development</SelectItem>
             <SelectItem value="Mobile Development">Mobile Development</SelectItem>
             <SelectItem value="Backend Development">Backend Development</SelectItem>
@@ -190,12 +192,12 @@ export default function Jobs() {
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/30 p-3">
         <Select value={jobType} onValueChange={(v) => setJobType(v as JobType)}>
           <SelectTrigger className="w-[200px]">
-            <SelectValue placeholder="Job type" />
+            <SelectValue placeholder={t("jobs.jobType")} />
           </SelectTrigger>
           <SelectContent>
             {JOB_TYPE_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>
-                {o.label}
+                {t(o.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -203,7 +205,7 @@ export default function Jobs() {
         <div className="relative flex-1 min-w-[180px] max-w-xs">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="City, state, or zip"
+            placeholder={t("jobs.locationPlaceholder")}
             className="pl-9"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
@@ -211,10 +213,10 @@ export default function Jobs() {
         </div>
         <Select value={platform} onValueChange={setPlatform}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Platform" />
+            <SelectValue placeholder={t("jobs.platform")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All platforms</SelectItem>
+            <SelectItem value="all">{t("jobs.allPlatforms")}</SelectItem>
             {PLATFORM_OPTIONS.map((p) => (
               <SelectItem key={p} value={p}>
                 {p}
@@ -227,22 +229,22 @@ export default function Jobs() {
           onValueChange={(v) => setPostedWithin(v as PostedWithin)}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Posted" />
+            <SelectValue placeholder={t("jobs.posted")} />
           </SelectTrigger>
           <SelectContent>
             {POSTED_WITHIN_OPTIONS.map((o) => (
               <SelectItem key={o.value} value={o.value}>
-                {o.label}
+                {t(o.labelKey)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Budget</span>
+          <span className="text-sm text-muted-foreground">{t("jobs.budget")}</span>
           <Input
             type="number"
             inputMode="numeric"
-            placeholder="Min"
+            placeholder={t("jobs.budgetMin")}
             className="w-24"
             value={minBudget}
             onChange={(e) => setMinBudget(e.target.value)}
@@ -251,7 +253,7 @@ export default function Jobs() {
           <Input
             type="number"
             inputMode="numeric"
-            placeholder="Max"
+            placeholder={t("jobs.budgetMax")}
             className="w-24"
             value={maxBudget}
             onChange={(e) => setMaxBudget(e.target.value)}
@@ -259,21 +261,21 @@ export default function Jobs() {
         </div>
         {hasActiveFilter ? (
           <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto">
-            <X className="mr-1 h-4 w-4" /> Clear all
+            <X className="mr-1 h-4 w-4" /> {t("common.clearAll")}
           </Button>
         ) : null}
       </div>
 
       {isError ? (
         <div className="py-20 text-center border rounded-lg bg-card/50">
-          <h3 className="text-lg font-medium">Couldn't load jobs</h3>
+          <h3 className="text-lg font-medium">{t("jobs.loadError")}</h3>
           <p className="text-muted-foreground mt-1">
             {(error as { error?: string; message?: string } | null)?.error
               || (error as { message?: string } | null)?.message
-              || "Something went wrong. Please try again."}
+              || t("jobs.loadErrorBody")}
           </p>
           <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
-            Retry
+            {t("jobs.retry")}
           </Button>
         </div>
       ) : isLoading ? (
@@ -314,20 +316,20 @@ export default function Jobs() {
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {job.jobType === "onsite" ? (
                         <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
-                          In-person
+                          {t("jobs.tagOnsite")}
                         </Badge>
                       ) : job.jobType === "hybrid" ? (
                         <Badge variant="outline" className="border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs">
-                          Hybrid
+                          {t("jobs.tagHybrid")}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="text-xs">Remote</Badge>
+                        <Badge variant="outline" className="text-xs">{t("jobs.tagRemote")}</Badge>
                       )}
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 flex-shrink-0 flex items-center gap-1">
                     <Zap className="h-3 w-3" />
-                    {job.successScore}% Match
+                    {job.successScore}% {t("jobs.match")}
                   </Badge>
                 </div>
               </CardHeader>
@@ -346,11 +348,11 @@ export default function Jobs() {
                   onClick={() => handleSaveJob(job.id)}
                   disabled={saveJob.isPending}
                 >
-                  <Bookmark className="mr-2 h-4 w-4" /> Save
+                  <Bookmark className="mr-2 h-4 w-4" /> {t("jobs.saveButton")}
                 </Button>
                 <Link href={`/proposals/new?jobId=${job.id}`}>
                   <Button size="sm">
-                    Generate Proposal
+                    {t("jobs.generateProposalButton")}
                   </Button>
                 </Link>
               </CardFooter>
@@ -361,7 +363,7 @@ export default function Jobs() {
         <div className="py-20 text-center border rounded-lg bg-card/50">
           <Search className="h-10 w-10 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-medium">
-            {hasActiveFilter ? "No jobs match your filters" : "No jobs available yet"}
+            {hasActiveFilter ? t("jobs.noMatch") : t("jobs.noneYet")}
           </h3>
           <p className="text-muted-foreground mt-1">
             {hasActiveFilter

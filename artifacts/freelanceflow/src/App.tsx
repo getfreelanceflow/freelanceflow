@@ -3,6 +3,7 @@ import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LanguageProvider } from "@/i18n/LanguageContext";
 
 import Layout from "@/components/Layout";
 import Landing from "@/pages/Landing";
@@ -91,6 +92,7 @@ function ClerkProviderWithRoutes() {
       routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
     >
       <QueryClientProvider client={queryClient}>
+        <LanguageProvider>
         <TooltipProvider>
           <Switch>
             <Route path="/" component={Landing} />
@@ -134,6 +136,7 @@ function ClerkProviderWithRoutes() {
           </Switch>
         </TooltipProvider>
         <Toaster />
+        </LanguageProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
