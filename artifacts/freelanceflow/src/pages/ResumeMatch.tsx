@@ -94,7 +94,6 @@ export default function ResumeMatch() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp,.heic,.heif,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,image/*"
               onChange={onFileUpload}
               className="hidden"
             />
