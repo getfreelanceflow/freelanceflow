@@ -290,7 +290,9 @@ Return ONLY the top 10 best-fitting jobs sorted by score descending.`;
 
     res.json({ profile: parsed.profile, matches: enriched });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    console.error("[ai/resume-match] error:", e);
+    const msg = e instanceof Error ? e.message : String(e);
+    res.status(500).json({ error: `Resume match failed: ${msg}` });
   }
 });
 
