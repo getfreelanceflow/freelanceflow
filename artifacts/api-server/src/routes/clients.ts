@@ -31,7 +31,7 @@ router.get("/clients", async (req, res) => {
     const result = await db.select().from(clients).where(eq(clients.userId, uid)).orderBy(clients.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -53,7 +53,7 @@ router.post("/clients", async (req, res) => {
       .returning();
     res.status(201).json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -76,7 +76,7 @@ router.get("/clients/:id", async (req, res) => {
       })),
     });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -91,7 +91,7 @@ router.put("/clients/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Client not found" });
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -103,7 +103,7 @@ router.delete("/clients/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Client not found" });
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

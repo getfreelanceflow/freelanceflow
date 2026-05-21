@@ -23,7 +23,7 @@ router.get("/templates", async (req, res) => {
     const result = await db.select().from(templates).where(eq(templates.userId, uid)).orderBy(templates.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -34,7 +34,7 @@ router.post("/templates", async (req, res) => {
     const [row] = await db.insert(templates).values({ ...body, userId: uid }).returning();
     res.status(201).json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -47,7 +47,7 @@ router.put("/templates/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Template not found" });
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -59,7 +59,7 @@ router.delete("/templates/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Template not found" });
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

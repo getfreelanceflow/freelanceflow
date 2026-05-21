@@ -31,7 +31,7 @@ router.get("/proposals", async (req, res) => {
       }))
     );
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -100,7 +100,7 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
       updatedAt: proposal.updatedAt.toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -124,7 +124,7 @@ router.get("/proposals/:id", async (req, res) => {
       updatedAt: proposal.updatedAt.toISOString(),
     });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -141,7 +141,7 @@ router.delete("/proposals/:id", async (req, res) => {
     }
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

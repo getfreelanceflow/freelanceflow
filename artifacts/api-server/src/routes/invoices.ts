@@ -49,7 +49,7 @@ router.get("/invoices", async (req, res) => {
     const result = await db.select().from(invoices).where(eq(invoices.userId, uid)).orderBy(invoices.createdAt);
     res.json(result.map(serialize));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -76,7 +76,7 @@ router.post("/invoices", async (req, res) => {
     if (body.status === "paid" && body.clientId) await recalcClientEarnings(uid, body.clientId);
     res.status(201).json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -88,7 +88,7 @@ router.get("/invoices/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Invoice not found" });
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -107,7 +107,7 @@ router.put("/invoices/:id", async (req, res) => {
     if (row.clientId) await recalcClientEarnings(uid, row.clientId);
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -120,7 +120,7 @@ router.delete("/invoices/:id", async (req, res) => {
     if (row.clientId) await recalcClientEarnings(uid, row.clientId);
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -151,7 +151,7 @@ router.get("/earnings/summary", async (req, res) => {
       monthly,
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

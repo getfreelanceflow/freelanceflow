@@ -50,7 +50,7 @@ Requirements:
     const content = await chat(system, user, 600);
     res.json({ bio: content });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -83,7 +83,7 @@ Requirements:
     const content = await chat(system, user, 800);
     res.json({ coverLetter: content });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -143,7 +143,7 @@ Return JSON with this exact shape:
     }
     res.json({ ...parsed, incomeBased: incomeBased ? Math.round(incomeBased) : null });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -190,7 +190,7 @@ Return JSON with this exact shape:
     }
     res.json(parsed);
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -290,8 +290,8 @@ Return ONLY the top 10 best-fitting jobs sorted by score descending.`;
 
     res.json({ profile: parsed.profile, matches: enriched });
   } catch (e) {
-    console.error("[ai/resume-match] error:", e);
-    const msg = e instanceof Error ? e.message : String(e);
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("[ai/resume-match] error:", msg);
     res.status(500).json({ error: `Resume match failed: ${msg}` });
   }
 });
@@ -325,7 +325,7 @@ Include sections: Parties, Scope of Work, Deliverables, Timeline, Compensation, 
     const content = await chat(system, user, 2500);
     res.json({ contract: content });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -351,7 +351,7 @@ Write a reply (200-300 words) the freelancer can send. Open with empathy, anchor
     const content = await chat(system, user, 900);
     res.json({ reply: content });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -394,7 +394,7 @@ Limit missingSkills to top 5.`;
     }
     res.json(parsed);
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -432,7 +432,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -473,7 +473,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -506,7 +506,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -546,7 +546,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -582,7 +582,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -625,7 +625,7 @@ Output JSON:
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -670,7 +670,7 @@ Return 4 niches, ordered by profitability potential.`;
     const cleaned = content.replace(/^```json\s*|\s*```$/g, "").trim();
     res.json(JSON.parse(cleaned));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -731,7 +731,7 @@ Mix budget levels — some entry/short ($500-3k), some mid ($3k-15k), and 1-2 hi
     }
     res.json(parsed);
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

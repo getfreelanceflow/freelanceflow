@@ -154,7 +154,8 @@ router.post("/seed-demo-data", async (req, res) => {
     }
     res.json({ ok: true, skipped: false, counts: result.counts });
   } catch (e) {
-    console.error("seed-demo-data error", e);
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("seed-demo-data error:", msg);
     res.status(500).json({ error: "Failed to seed demo data" });
   }
 });

@@ -53,7 +53,7 @@ router.get("/saved-jobs", async (req, res) => {
       }))
     );
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -82,7 +82,7 @@ router.post("/saved-jobs", async (req, res) => {
       },
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -99,7 +99,7 @@ router.delete("/saved-jobs/:id", async (req, res) => {
     }
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

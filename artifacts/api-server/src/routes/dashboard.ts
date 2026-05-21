@@ -79,7 +79,7 @@ router.get("/dashboard/summary", async (req, res) => {
       activeGoals: goalCount.total,
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -104,7 +104,7 @@ router.get("/dashboard/recent-proposals", async (req, res) => {
       }))
     );
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -127,7 +127,7 @@ router.get("/dashboard/top-jobs", async (_req, res) => {
       }))
     );
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

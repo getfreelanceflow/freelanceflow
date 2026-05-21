@@ -29,7 +29,7 @@ router.get("/openai/conversations", async (_req, res) => {
       }))
     );
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -55,7 +55,7 @@ router.post("/openai/conversations", async (req, res) => {
       createdAt: convo.createdAt.toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -86,7 +86,7 @@ router.get("/openai/conversations/:id", async (req, res) => {
       })),
     });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -104,7 +104,7 @@ router.delete("/openai/conversations/:id", async (req, res) => {
     }
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -132,7 +132,7 @@ router.get("/openai/conversations/:id/messages", async (req, res) => {
       }))
     );
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -196,7 +196,7 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
       createdAt: assistantMsg.createdAt.toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

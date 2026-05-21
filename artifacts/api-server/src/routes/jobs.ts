@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { ZodError } from "zod";
 import { db, jobs } from "@workspace/db";
 import { eq, and, gte, lte, sql, ilike, or, type SQL } from "drizzle-orm";
 import {
@@ -51,8 +52,10 @@ router.get("/jobs", async (req, res) => {
       }))
     );
   } catch (e) {
-    console.error("[jobs] list error:", e);
-    res.status(400).json({ error: e instanceof Error ? e.message : "Failed to list jobs" });
+    const msg = e instanceof Error ? e.message : "Failed to list jobs";
+    console.error("[jobs] list error:", msg);
+    const status = e instanceof ZodError ? 400 : 500;
+    res.status(status).json({ error: msg });
   }
 });
 
@@ -71,7 +74,10 @@ router.get("/jobs/:id", async (req, res) => {
       clientRating: job.clientRating ? parseFloat(job.clientRating) : null,
     });
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    const msg = e instanceof Error ? e.message : "Failed to fetch job";
+    console.error("[jobs] get error:", msg);
+    const status = e instanceof ZodError ? 400 : 500;
+    res.status(status).json({ error: msg });
   }
 });
 

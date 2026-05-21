@@ -26,7 +26,7 @@ export default function Jobs() {
     category: category !== "all" ? category : undefined 
   };
   
-  const { data: jobs, isLoading } = useListJobs(queryParams, {
+  const { data: jobs, isLoading, isError, error, refetch } = useListJobs(queryParams, {
     query: { queryKey: getListJobsQueryKey(queryParams) }
   });
 
@@ -94,7 +94,19 @@ export default function Jobs() {
         </Select>
       </div>
 
-      {isLoading ? (
+      {isError ? (
+        <div className="py-20 text-center border rounded-lg bg-card/50">
+          <h3 className="text-lg font-medium">Couldn't load jobs</h3>
+          <p className="text-muted-foreground mt-1">
+            {(error as { error?: string; message?: string } | null)?.error
+              || (error as { message?: string } | null)?.message
+              || "Something went wrong. Please try again."}
+          </p>
+          <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : isLoading ? (
         <div className="grid gap-6 md:grid-cols-2">
           {[1, 2, 3, 4].map(i => (
             <Card key={i} className="flex flex-col">

@@ -54,7 +54,7 @@ router.get("/profile", async (req, res) => {
     const p = await getOrCreate(uid);
     res.json(serialize(p));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -68,7 +68,7 @@ router.put("/profile", async (req, res) => {
     const [row] = await db.update(profile).set(updates).where(and(eq(profile.id, existing.id), eq(profile.userId, uid))).returning();
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

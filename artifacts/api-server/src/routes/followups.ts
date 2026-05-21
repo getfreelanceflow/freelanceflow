@@ -29,7 +29,7 @@ router.get("/followups", async (req, res) => {
     const result = await db.select().from(followups).where(eq(followups.userId, uid)).orderBy(followups.dueDate);
     res.json(result.map(serialize));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -50,7 +50,7 @@ router.post("/followups", async (req, res) => {
       .returning();
     res.status(201).json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -72,7 +72,7 @@ router.put("/followups/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Follow-up not found" });
     res.json(serialize(row));
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -84,7 +84,7 @@ router.delete("/followups/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Follow-up not found" });
     res.status(204).end();
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 

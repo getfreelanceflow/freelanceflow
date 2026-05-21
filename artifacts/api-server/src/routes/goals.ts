@@ -43,7 +43,7 @@ router.post("/goals", async (req, res) => {
       .returning();
     res.status(201).json(row);
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
@@ -65,7 +65,7 @@ router.patch("/goals/:id", async (req, res) => {
     if (!row) return res.status(404).json({ error: "Not found" });
     res.json(row);
   } catch (e) {
-    res.status(400).json({ error: String(e) });
+    res.status(400).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });
 
