@@ -133,10 +133,61 @@ export interface OpenaiError {
   error: string;
 }
 
+export interface SearchHit {
+  id: number;
+  title: string;
+  /** @nullable */
+  subtitle?: string | null;
+  href: string;
+}
+
+export interface GlobalSearchResults {
+  jobs: SearchHit[];
+  clients: SearchHit[];
+  invoices: SearchHit[];
+  proposals: SearchHit[];
+}
+
+export type NotificationKind = typeof NotificationKind[keyof typeof NotificationKind];
+
+
+export const NotificationKind = {
+  invoice_overdue: 'invoice_overdue',
+  invoice_due_soon: 'invoice_due_soon',
+  followup_due: 'followup_due',
+  job_match: 'job_match',
+  welcome: 'welcome',
+} as const;
+
+export interface Notification {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  href: string;
+  createdAt: string;
+}
+
 export type ListJobsParams = {
 category?: string;
 search?: string;
 minBudget?: number;
 maxBudget?: number;
+platform?: string;
+postedWithin?: ListJobsPostedWithin;
+};
+
+export type ListJobsPostedWithin = typeof ListJobsPostedWithin[keyof typeof ListJobsPostedWithin];
+
+
+export const ListJobsPostedWithin = {
+  '24h': '24h',
+  '7d': '7d',
+  '30d': '30d',
+  any: 'any',
+} as const;
+
+export type GlobalSearchParams = {
+q: string;
 };
 

@@ -89,6 +89,16 @@ router.get("/jobs", async (req, res) => {
         if (combined) conditions.push(combined);
       }
     }
+    if (query.platform) {
+      conditions.push(ilike(jobs.platform, `%${query.platform}%`));
+    }
+    if (query.postedWithin && query.postedWithin !== "any") {
+      const hoursMap: Record<string, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
+      const hours = hoursMap[query.postedWithin];
+      if (hours) {
+        conditions.push(sql`${jobs.postedAt} >= NOW() - (${hours} * INTERVAL '1 hour')`);
+      }
+    }
 
     const result = await db
       .select()

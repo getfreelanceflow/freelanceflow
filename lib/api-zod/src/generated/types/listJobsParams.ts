@@ -5,10 +5,13 @@
  * FreelanceFlow AI API
  * OpenAPI spec version: 0.1.0
  */
+import type { ListJobsPostedWithin } from './listJobsPostedWithin';
 
 export type ListJobsParams = {
 category?: string;
 search?: string;
 minBudget?: number;
 maxBudget?: number;
+platform?: string;
+postedWithin?: ListJobsPostedWithin;
 };

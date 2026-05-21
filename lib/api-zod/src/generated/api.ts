@@ -24,7 +24,9 @@ export const ListJobsQueryParams = zod.object({
   "category": zod.coerce.string().optional(),
   "search": zod.coerce.string().optional(),
   "minBudget": zod.coerce.number().optional(),
-  "maxBudget": zod.coerce.number().optional()
+  "maxBudget": zod.coerce.number().optional(),
+  "platform": zod.coerce.string().optional(),
+  "postedWithin": zod.enum(['24h', '7d', '30d', 'any']).optional()
 })
 
 export const ListJobsResponseItem = zod.object({
@@ -42,6 +44,55 @@ export const ListJobsResponseItem = zod.object({
   "clientRating": zod.number().nullish()
 })
 export const ListJobsResponse = zod.array(ListJobsResponseItem)
+
+
+/**
+ * @summary Global search across jobs, clients, invoices, proposals
+ */
+export const GlobalSearchQueryParams = zod.object({
+  "q": zod.coerce.string()
+})
+
+export const GlobalSearchResponse = zod.object({
+  "jobs": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "href": zod.string()
+})),
+  "clients": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "href": zod.string()
+})),
+  "invoices": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "href": zod.string()
+})),
+  "proposals": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "subtitle": zod.string().nullish(),
+  "href": zod.string()
+}))
+})
+
+
+/**
+ * @summary List actionable notifications for the current user
+ */
+export const ListNotificationsResponseItem = zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['invoice_overdue', 'invoice_due_soon', 'followup_due', 'job_match', 'welcome']),
+  "title": zod.string(),
+  "body": zod.string(),
+  "href": zod.string(),
+  "createdAt": zod.string()
+})
+export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem)
 
 
 /**

@@ -34,6 +34,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import GlobalSearch from "@/components/GlobalSearch";
+import NotificationsBell from "@/components/NotificationsBell";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -172,22 +174,30 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
-          <span className="text-xl font-bold text-primary">FreelanceFlow.ai</span>
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side="left"
-              className="w-64 p-0 bg-sidebar border-r-sidebar-border"
-            >
-              <SidebarNav />
-            </SheetContent>
-          </Sheet>
+        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:px-6">
+          <div className="flex items-center gap-3 md:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="w-64 p-0 bg-sidebar border-r-sidebar-border"
+              >
+                <SidebarNav />
+              </SheetContent>
+            </Sheet>
+            <span className="text-lg font-bold text-primary">FreelanceFlow.ai</span>
+          </div>
+          <div className="flex-1 max-w-md md:block">
+            <GlobalSearch />
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
+          </div>
         </header>
 
         <main className="flex-1 overflow-auto p-4 md:p-8">

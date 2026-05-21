@@ -17,19 +17,48 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X } from "lucide-react";
 
+const POSTED_WITHIN_OPTIONS = [
+  { value: "any", label: "Any time" },
+  { value: "24h", label: "Last 24 hours" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+] as const;
+
+const PLATFORM_OPTIONS = [
+  "Upwork",
+  "Fiverr",
+  "Toptal",
+  "Freelancer",
+  "Contra",
+  "Direct",
+] as const;
+
+type PostedWithin = (typeof POSTED_WITHIN_OPTIONS)[number]["value"];
+
 export default function Jobs() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [platform, setPlatform] = useState("all");
+  const [postedWithin, setPostedWithin] = useState<PostedWithin>("any");
+  const [minBudget, setMinBudget] = useState("");
+  const [maxBudget, setMaxBudget] = useState("");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => clearTimeout(t);
   }, [search]);
 
+  const minBudgetNum = minBudget ? Number(minBudget) : undefined;
+  const maxBudgetNum = maxBudget ? Number(maxBudget) : undefined;
+
   const queryParams = {
     search: debouncedSearch || undefined,
     category: category !== "all" ? category : undefined,
+    platform: platform !== "all" ? platform : undefined,
+    postedWithin: postedWithin !== "any" ? postedWithin : undefined,
+    minBudget: Number.isFinite(minBudgetNum) ? minBudgetNum : undefined,
+    maxBudget: Number.isFinite(maxBudgetNum) ? maxBudgetNum : undefined,
   };
 
   const { data: jobs, isLoading, isFetching, isError, error, refetch } = useListJobs(queryParams, {
@@ -41,7 +70,22 @@ export default function Jobs() {
     },
   });
 
-  const hasActiveFilter = debouncedSearch.length > 0 || category !== "all";
+  const hasActiveFilter =
+    debouncedSearch.length > 0 ||
+    category !== "all" ||
+    platform !== "all" ||
+    postedWithin !== "any" ||
+    minBudget !== "" ||
+    maxBudget !== "";
+
+  const clearAllFilters = () => {
+    setSearch("");
+    setCategory("all");
+    setPlatform("all");
+    setPostedWithin("any");
+    setMinBudget("");
+    setMaxBudget("");
+  };
 
   const saveJob = useSaveJob();
   const queryClient = useQueryClient();
@@ -91,7 +135,7 @@ export default function Jobs() {
           ) : null}
         </div>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -118,6 +162,62 @@ export default function Jobs() {
             <SelectItem value="Photography">Photography</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/30 p-3">
+        <Select value={platform} onValueChange={setPlatform}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Platform" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All platforms</SelectItem>
+            {PLATFORM_OPTIONS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={postedWithin}
+          onValueChange={(v) => setPostedWithin(v as PostedWithin)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Posted" />
+          </SelectTrigger>
+          <SelectContent>
+            {POSTED_WITHIN_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Budget</span>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="Min"
+            className="w-24"
+            value={minBudget}
+            onChange={(e) => setMinBudget(e.target.value)}
+          />
+          <span className="text-muted-foreground">–</span>
+          <Input
+            type="number"
+            inputMode="numeric"
+            placeholder="Max"
+            className="w-24"
+            value={maxBudget}
+            onChange={(e) => setMaxBudget(e.target.value)}
+          />
+        </div>
+        {hasActiveFilter ? (
+          <Button variant="ghost" size="sm" onClick={clearAllFilters} className="ml-auto">
+            <X className="mr-1 h-4 w-4" /> Clear all
+          </Button>
+        ) : null}
       </div>
 
       {isError ? (
@@ -210,14 +310,7 @@ export default function Jobs() {
           </p>
           <div className="flex gap-2 justify-center mt-4">
             {hasActiveFilter ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearch("");
-                  setCategory("all");
-                }}
-              >
+              <Button variant="outline" size="sm" onClick={clearAllFilters}>
                 Clear filters
               </Button>
             ) : null}

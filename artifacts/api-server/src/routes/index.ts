@@ -16,6 +16,8 @@ import expensesRouter from "./expenses";
 import goalsRouter from "./goals";
 import parseResumeRouter from "./parseResume";
 import demoDataRouter from "./demoData";
+import searchRouter from "./search";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -36,5 +38,7 @@ router.use(expensesRouter);
 router.use(goalsRouter);
 router.use(parseResumeRouter);
 router.use(demoDataRouter);
+router.use(searchRouter);
+router.use(notificationsRouter);
 
 export default router;
