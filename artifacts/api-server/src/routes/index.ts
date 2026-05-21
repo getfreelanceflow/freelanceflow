@@ -16,6 +16,7 @@ import tasksRouter from "./tasks";
 import expensesRouter from "./expenses";
 import goalsRouter from "./goals";
 import parseResumeRouter from "./parseResume";
+import demoDataRouter from "./demoData";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(tasksRouter);
 router.use(expensesRouter);
 router.use(goalsRouter);
 router.use(parseResumeRouter);
+router.use(demoDataRouter);
 
 export default router;

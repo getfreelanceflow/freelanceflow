@@ -4,6 +4,7 @@ import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Play, Square, Trash2, Clock, DollarSign } from "lucide-react";
@@ -15,6 +16,7 @@ export default function TimeTracker() {
 
   const [description, setDescription] = useState("");
   const [rate, setRate] = useState("");
+  const [billable, setBillable] = useState(true);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
 
@@ -57,7 +59,7 @@ export default function TimeTracker() {
       endedAt: ended,
       hours: hours.toFixed(2) as unknown as string,
       rate: rate ? (parseFloat(rate).toFixed(2) as unknown as string) : null,
-      billable: true,
+      billable,
     } as unknown as Parameters<typeof api.createTimeEntry>[0]);
     setStartedAt(null);
     setDescription("");
@@ -132,6 +134,17 @@ export default function TimeTracker() {
                 disabled={!!startedAt}
               />
             </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Switch
+              id="billable-toggle"
+              checked={billable}
+              onCheckedChange={setBillable}
+              disabled={!!startedAt}
+            />
+            <Label htmlFor="billable-toggle" className="cursor-pointer">
+              Billable
+            </Label>
           </div>
           <div className="flex items-center gap-4">
             {!startedAt ? (

@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useUser } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetDashboardSummary,
   getGetDashboardSummaryQueryKey,
@@ -8,6 +10,8 @@ import {
   useGetTopJobs,
   getGetTopJobsQueryKey,
 } from "@workspace/api-client-react";
+import { aiPost } from "@/lib/aiFetch";
+import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,6 +53,29 @@ type DashboardSummary = {
 
 export default function Dashboard() {
   const { user } = useUser();
+  const queryClient = useQueryClient();
+  const [isSeeding, setIsSeeding] = useState(false);
+
+  async function handleLoadSampleData() {
+    setIsSeeding(true);
+    try {
+      const data = await aiPost<{ ok: boolean; skipped?: boolean; message?: string }>(
+        "/seed-demo-data",
+        {},
+      );
+      if (data.skipped) {
+        toast.info(data.message ?? "You already have data.");
+      } else {
+        toast.success("Sample data loaded! Check Clients, Invoices, Tasks…");
+      }
+      await queryClient.invalidateQueries();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load sample data");
+    } finally {
+      setIsSeeding(false);
+    }
+  }
+
   const { data: rawSummary, isLoading: isLoadingSummary } = useGetDashboardSummary({
     query: { queryKey: getGetDashboardSummaryQueryKey() },
   });
@@ -105,6 +132,16 @@ export default function Dashboard() {
             <QuickAction href="/jobs" icon={Briefcase} label="Browse job feed" />
             <QuickAction href="/clients" icon={Users} label="Add a client" />
             <QuickAction href="/profile" icon={FileText} label="Set up profile" />
+          </CardContent>
+          <CardContent className="border-t pt-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm text-muted-foreground">
+                Want to try it out first? Load sample clients, invoices, tasks, expenses, and more.
+              </div>
+              <Button onClick={handleLoadSampleData} disabled={isSeeding}>
+                {isSeeding ? "Loading…" : "Load sample data"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

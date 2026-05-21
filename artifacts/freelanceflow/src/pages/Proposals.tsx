@@ -1,16 +1,34 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { 
-  useListProposals, 
+import {
+  useListProposals,
   getListProposalsQueryKey,
-  useDeleteProposal 
+  useDeleteProposal,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Trash2, Calendar, Edit2, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { FileText, Trash2, Calendar, Eye, CheckCircle2, XCircle, Clock, Copy } from "lucide-react";
+
+type ProposalItem = {
+  id: number;
+  jobTitle: string;
+  content: string;
+  status: string;
+  successProbability?: number | string | null;
+  createdAt: string;
+};
 
 export default function Proposals() {
   const { data: proposals, isLoading } = useListProposals({
@@ -20,6 +38,16 @@ export default function Proposals() {
   const deleteProposal = useDeleteProposal();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [viewing, setViewing] = useState<ProposalItem | null>(null);
+
+  const handleCopy = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({ title: "Copied", description: "Proposal copied to clipboard." });
+    } catch {
+      toast({ title: "Copy failed", description: "Could not access clipboard.", variant: "destructive" });
+    }
+  };
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this proposal?")) {
@@ -100,8 +128,8 @@ export default function Proposals() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 self-end md:self-center">
-                    <Button variant="outline" size="sm" onClick={() => alert("Edit not implemented yet")}>
-                      <Edit2 className="h-4 w-4 mr-2" /> View/Edit
+                    <Button variant="outline" size="sm" onClick={() => setViewing(proposal as ProposalItem)}>
+                      <Eye className="h-4 w-4 mr-2" /> View
                     </Button>
                     <Button 
                       variant="ghost" 
@@ -130,6 +158,34 @@ export default function Proposals() {
           </Link>
         </div>
       )}
+
+      <Dialog open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="truncate">{viewing?.jobTitle}</DialogTitle>
+            <DialogDescription>
+              {viewing && (
+                <span className="flex items-center gap-3 text-xs">
+                  <Badge variant="outline" className="capitalize">{viewing.status}</Badge>
+                  <span>{new Date(viewing.createdAt).toLocaleString()}</span>
+                  {viewing.successProbability != null && (
+                    <span className="text-primary">{viewing.successProbability}% win chance</span>
+                  )}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="overflow-y-auto flex-1 whitespace-pre-wrap text-sm bg-muted/30 rounded-md p-4 border">
+            {viewing?.content}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => viewing && handleCopy(viewing.content)}>
+              <Copy className="h-4 w-4 mr-2" /> Copy
+            </Button>
+            <Button onClick={() => setViewing(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

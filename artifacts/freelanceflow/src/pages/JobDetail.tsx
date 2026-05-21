@@ -1,17 +1,38 @@
 import { useParams, Link } from "wouter";
-import { useGetJob, getGetJobQueryKey } from "@workspace/api-client-react";
+import {
+  useGetJob,
+  getGetJobQueryKey,
+  useSaveJob,
+  getListSavedJobsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Briefcase, Calendar, DollarSign, ExternalLink, Globe, Star, Zap } from "lucide-react";
+import { ArrowLeft, Bookmark, Briefcase, Calendar, DollarSign, Star, Zap } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams();
   const jobId = parseInt(id || "0", 10);
-  
+  const qc = useQueryClient();
+
   const { data: job, isLoading, error } = useGetJob(jobId, {
     query: { enabled: !!jobId, queryKey: getGetJobQueryKey(jobId) }
+  });
+
+  const saveJob = useSaveJob({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Job saved");
+        qc.invalidateQueries({ queryKey: getListSavedJobsQueryKey() });
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { error?: string })?.error || "Could not save job";
+        toast.error(msg);
+      },
+    },
   });
 
   if (isLoading) {
@@ -123,10 +144,14 @@ export default function JobDetail() {
               )}
               
               <div className="pt-4 mt-4 border-t">
-                <Button variant="outline" className="w-full" asChild>
-                  <a href="#" target="_blank" rel="noopener noreferrer">
-                    View on {job.platform} <ExternalLink className="ml-2 h-4 w-4" />
-                  </a>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => saveJob.mutate({ data: { jobId: job.id } })}
+                  disabled={saveJob.isPending}
+                >
+                  <Bookmark className="mr-2 h-4 w-4" />
+                  {saveJob.isPending ? "Saving…" : "Save Job"}
                 </Button>
               </div>
             </CardContent>
