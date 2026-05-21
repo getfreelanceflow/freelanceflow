@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Upload, Briefcase } from "lucide-react";
+import { Loader2, Sparkles, Upload, Briefcase, ArrowRight } from "lucide-react";
 import { aiPost } from "@/lib/aiFetch";
 
 async function fileToBase64(file: File): Promise<string> {
@@ -192,42 +193,52 @@ export default function ResumeMatch() {
         <div className="space-y-3">
           <h2 className="text-xl font-semibold tracking-tight">Top {result.matches.length} Matching Jobs</h2>
           {result.matches.map((m) => (
-            <Card key={m.jobId}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
-                      {m.job?.title ?? `Job #${m.jobId}`}
-                    </CardTitle>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      {m.job?.category && <span>{m.job.category}</span>}
-                      {m.job?.platform && <span>• {m.job.platform}</span>}
-                      {m.job?.budgetMin && m.job?.budgetMax && (
-                        <span>• ${m.job.budgetMin}–${m.job.budgetMax}</span>
-                      )}
+            <Link key={m.jobId} href={`/jobs/${m.jobId}`}>
+              <a
+                className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+                data-testid={`resume-match-${m.jobId}`}
+              >
+                <Card className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md hover:bg-accent/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Briefcase className="h-4 w-4 text-muted-foreground" />
+                          {m.job?.title ?? `Job #${m.jobId}`}
+                        </CardTitle>
+                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          {m.job?.category && <span>{m.job.category}</span>}
+                          {m.job?.platform && <span>• {m.job.platform}</span>}
+                          {m.job?.budgetMin && m.job?.budgetMax && (
+                            <span>• ${m.job.budgetMin}–${m.job.budgetMax}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-3xl font-bold text-primary">{m.score}</div>
+                        <div className="text-xs text-muted-foreground">match</div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="text-3xl font-bold text-primary">{m.score}</div>
-                    <div className="text-xs text-muted-foreground">match</div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm">{m.reason}</p>
-                {m.highlights.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {m.highlights.map((h, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">✓ {h}</Badge>
-                    ))}
-                  </div>
-                )}
-                {m.job?.description && (
-                  <p className="text-xs text-muted-foreground line-clamp-3">{m.job.description}</p>
-                )}
-              </CardContent>
-            </Card>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm">{m.reason}</p>
+                    {m.highlights.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {m.highlights.map((h, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">✓ {h}</Badge>
+                        ))}
+                      </div>
+                    )}
+                    {m.job?.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-3">{m.job.description}</p>
+                    )}
+                    <div className="flex items-center justify-end pt-1 text-xs font-medium text-primary">
+                      View full details <ArrowRight className="ml-1 h-3 w-3" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </a>
+            </Link>
           ))}
         </div>
       )}
