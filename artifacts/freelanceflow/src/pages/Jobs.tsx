@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { 
   useListJobs, 
@@ -7,7 +7,7 @@ import {
   getGetDashboardSummaryQueryKey,
   getListSavedJobsQueryKey
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,20 +15,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Bookmark, Zap, Briefcase, DollarSign } from "lucide-react";
+import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X } from "lucide-react";
 
 export default function Jobs() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("all");
-  
-  const queryParams = { 
-    search: search || undefined, 
-    category: category !== "all" ? category : undefined 
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const queryParams = {
+    search: debouncedSearch || undefined,
+    category: category !== "all" ? category : undefined,
   };
-  
-  const { data: jobs, isLoading, isError, error, refetch } = useListJobs(queryParams, {
-    query: { queryKey: getListJobsQueryKey(queryParams) }
+
+  const { data: jobs, isLoading, isFetching, isError, error, refetch } = useListJobs(queryParams, {
+    query: {
+      queryKey: getListJobsQueryKey(queryParams),
+      placeholderData: keepPreviousData,
+      refetchOnMount: "always",
+      retry: 1,
+    },
   });
+
+  const hasActiveFilter = debouncedSearch.length > 0 || category !== "all";
 
   const saveJob = useSaveJob();
   const queryClient = useQueryClient();
@@ -57,12 +70,25 @@ export default function Jobs() {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search by title, skill, category, client, or platform..." 
-            className="pl-9"
+          <Input
+            placeholder="Search by title, skill, category, client, or platform..."
+            className="pl-9 pr-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            data-testid="jobs-search-input"
           />
+          {isFetching ? (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground animate-spin" />
+          ) : search ? (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
         <Select value={category} onValueChange={setCategory}>
           <SelectTrigger className="w-[200px]">
@@ -174,8 +200,32 @@ export default function Jobs() {
       ) : (
         <div className="py-20 text-center border rounded-lg bg-card/50">
           <Search className="h-10 w-10 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h3 className="text-lg font-medium">No jobs found</h3>
-          <p className="text-muted-foreground mt-1">Try adjusting your search or category filter.</p>
+          <h3 className="text-lg font-medium">
+            {hasActiveFilter ? "No jobs match your filters" : "No jobs available yet"}
+          </h3>
+          <p className="text-muted-foreground mt-1">
+            {hasActiveFilter
+              ? `Nothing matched ${debouncedSearch ? `"${debouncedSearch}"` : "your filters"}. Try a different search term or category.`
+              : "There's nothing in the job feed right now. Try reloading, or seed sample data from the Dashboard."}
+          </p>
+          <div className="flex gap-2 justify-center mt-4">
+            {hasActiveFilter ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  setCategory("all");
+                }}
+              >
+                Clear filters
+              </Button>
+            ) : null}
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
+              {isFetching ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Reload
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -9,6 +9,52 @@ import {
 
 const router = Router();
 
+// Common search synonyms — expands a single token into related terms so users
+// searching for "javascript" also see Node/TypeScript jobs, etc.
+const SEARCH_SYNONYMS: Record<string, string[]> = {
+  javascript: ["javascript", "js", "node", "typescript", "react", "vue", "next"],
+  js: ["js", "javascript", "node", "typescript"],
+  typescript: ["typescript", "ts", "javascript", "node"],
+  ts: ["ts", "typescript", "javascript"],
+  node: ["node", "nodejs", "javascript", "express"],
+  nodejs: ["nodejs", "node", "javascript"],
+  react: ["react", "reactjs", "next", "javascript"],
+  reactjs: ["reactjs", "react"],
+  python: ["python", "django", "flask", "fastapi"],
+  ai: ["ai", "ml", "machine learning", "llm", "openai", "gpt"],
+  ml: ["ml", "ai", "machine learning"],
+  designer: ["designer", "design", "ui", "ux", "figma"],
+  design: ["design", "designer", "ui", "ux", "figma"],
+  writer: ["writer", "writing", "copywriting", "content"],
+  writing: ["writing", "writer", "copywriting", "content"],
+  marketing: ["marketing", "seo", "growth", "ads"],
+  mobile: ["mobile", "ios", "android", "react native", "flutter"],
+  ios: ["ios", "swift", "mobile"],
+  android: ["android", "kotlin", "mobile"],
+};
+
+function expandSearchTerm(input: string): string[] {
+  const tokens = input
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .map((t) => t.trim())
+    .filter((t) => t.length > 0);
+
+  const expanded = new Set<string>();
+  // Always include the full original phrase (handles multi-word matches like "case study")
+  const fullPhrase = input.trim();
+  if (fullPhrase.length > 0) expanded.add(fullPhrase);
+
+  for (const tok of tokens) {
+    expanded.add(tok);
+    const syns = SEARCH_SYNONYMS[tok];
+    if (syns) {
+      for (const s of syns) expanded.add(s);
+    }
+  }
+  return [...expanded];
+}
+
 router.get("/jobs", async (req, res) => {
   try {
     const query = ListJobsQueryParams.parse(req.query);
@@ -24,16 +70,24 @@ router.get("/jobs", async (req, res) => {
       conditions.push(lte(jobs.budgetMax, String(query.maxBudget)));
     }
     if (query.search) {
-      const term = `%${query.search}%`;
-      const searchCond = or(
-        ilike(jobs.title, term),
-        ilike(jobs.description, term),
-        ilike(jobs.category, term),
-        ilike(jobs.platform, term),
-        ilike(jobs.clientName, term),
-        sql`EXISTS (SELECT 1 FROM unnest(${jobs.skills}) AS s WHERE s ILIKE ${term})`,
-      );
-      if (searchCond) conditions.push(searchCond);
+      const terms = expandSearchTerm(query.search);
+      const perTermConds: SQL[] = [];
+      for (const t of terms) {
+        const like = `%${t}%`;
+        const cond = or(
+          ilike(jobs.title, like),
+          ilike(jobs.description, like),
+          ilike(jobs.category, like),
+          ilike(jobs.platform, like),
+          ilike(jobs.clientName, like),
+          sql`EXISTS (SELECT 1 FROM unnest(${jobs.skills}) AS s WHERE s ILIKE ${like})`,
+        );
+        if (cond) perTermConds.push(cond);
+      }
+      if (perTermConds.length > 0) {
+        const combined = or(...perTermConds);
+        if (combined) conditions.push(combined);
+      }
     }
 
     const result = await db
