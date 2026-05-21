@@ -19,9 +19,15 @@ const upsertSchema = z.object({
 });
 
 router.get("/goals", async (req, res) => {
-  const uid = (req as unknown as AuthedRequest).userId;
-  const rows = await db.select().from(goals).where(eq(goals.userId, uid)).orderBy(desc(goals.createdAt));
-  res.json(rows);
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const rows = await db.select().from(goals).where(eq(goals.userId, uid)).orderBy(desc(goals.createdAt));
+    res.json(rows);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("[goals] list error:", msg);
+    res.status(500).json({ error: msg });
+  }
 });
 
 router.post("/goals", async (req, res) => {

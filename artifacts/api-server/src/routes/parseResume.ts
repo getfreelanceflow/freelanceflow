@@ -5,9 +5,9 @@ import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
-// Large JSON body parser scoped ONLY to this route, mounted AFTER requireUser
-// so unauthenticated clients can't force giant allocations.
-const largeJson = json({ limit: "1400mb" });
+// Cap request body to ~15MB. Base64 inflates payloads ~33%, so this allows up
+// to ~11MB of raw file bytes (slightly above the 10MB UI limit for safety).
+const largeJson = json({ limit: "15mb" });
 
 const Body = z.object({
   fileBase64: z.string().min(10),
@@ -44,7 +44,7 @@ async function extractFromImage(buf: Buffer, mimeType: string): Promise<string> 
   return completion.choices[0]?.message?.content?.trim() ?? "";
 }
 
-const MAX_BYTES = 1024 * 1024 * 1024;
+const MAX_BYTES = 10 * 1024 * 1024;
 
 router.post("/parse-resume", requireUser, largeJson, async (req, res) => {
   const parsed = Body.safeParse(req.body);
@@ -60,7 +60,7 @@ router.post("/parse-resume", requireUser, largeJson, async (req, res) => {
   }
   if (buf.length === 0) return res.status(400).json({ error: "Empty file." });
   if (buf.length > MAX_BYTES) {
-    return res.status(413).json({ error: "File too large (max 1 GB)." });
+    return res.status(413).json({ error: "File too large (max 10 MB)." });
   }
   const ext = extOf(fileName);
   try {

@@ -19,9 +19,15 @@ const upsertSchema = z.object({
 });
 
 router.get("/time-entries", async (req, res) => {
-  const uid = (req as unknown as AuthedRequest).userId;
-  const rows = await db.select().from(timeEntries).where(eq(timeEntries.userId, uid)).orderBy(desc(timeEntries.startedAt));
-  res.json(rows);
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const rows = await db.select().from(timeEntries).where(eq(timeEntries.userId, uid)).orderBy(desc(timeEntries.startedAt));
+    res.json(rows);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("[time-entries] list error:", msg);
+    res.status(500).json({ error: msg });
+  }
 });
 
 router.post("/time-entries", async (req, res) => {
@@ -74,28 +80,40 @@ router.patch("/time-entries/:id", async (req, res) => {
 });
 
 router.delete("/time-entries/:id", async (req, res) => {
-  const uid = (req as unknown as AuthedRequest).userId;
-  const id = parseInt(req.params.id, 10);
-  await db.delete(timeEntries).where(and(eq(timeEntries.id, id), eq(timeEntries.userId, uid)));
-  res.status(204).end();
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(req.params.id, 10);
+    await db.delete(timeEntries).where(and(eq(timeEntries.id, id), eq(timeEntries.userId, uid)));
+    res.status(204).end();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("[time-entries] delete error:", msg);
+    res.status(500).json({ error: msg });
+  }
 });
 
 router.get("/time-entries/summary", async (req, res) => {
-  const uid = (req as unknown as AuthedRequest).userId;
-  const rows = await db
-    .select({
-      totalHours: sql<string>`COALESCE(SUM(${timeEntries.hours}), 0)`,
-      billableHours: sql<string>`COALESCE(SUM(CASE WHEN ${timeEntries.billable} THEN ${timeEntries.hours} ELSE 0 END), 0)`,
-      entryCount: sql<number>`COUNT(*)::int`,
-    })
-    .from(timeEntries)
-    .where(eq(timeEntries.userId, uid));
-  const r = rows[0] ?? { totalHours: "0", billableHours: "0", entryCount: 0 };
-  res.json({
-    totalHours: parseFloat(r.totalHours),
-    billableHours: parseFloat(r.billableHours),
-    entryCount: r.entryCount,
-  });
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const rows = await db
+      .select({
+        totalHours: sql<string>`COALESCE(SUM(${timeEntries.hours}), 0)`,
+        billableHours: sql<string>`COALESCE(SUM(CASE WHEN ${timeEntries.billable} THEN ${timeEntries.hours} ELSE 0 END), 0)`,
+        entryCount: sql<number>`COUNT(*)::int`,
+      })
+      .from(timeEntries)
+      .where(eq(timeEntries.userId, uid));
+    const r = rows[0] ?? { totalHours: "0", billableHours: "0", entryCount: 0 };
+    res.json({
+      totalHours: parseFloat(r.totalHours),
+      billableHours: parseFloat(r.billableHours),
+      entryCount: r.entryCount,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Internal error";
+    console.error("[time-entries] summary error:", msg);
+    res.status(500).json({ error: msg });
+  }
 });
 
 export default router;

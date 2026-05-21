@@ -54,8 +54,8 @@ export default function ResumeMatch() {
     setFileError(null);
     setParsing(true);
     try {
-      if (file.size > 1024 * 1024 * 1024) {
-        throw new Error("File too large (max 1 GB).");
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("File too large (max 10 MB).");
       }
       const fileBase64 = await fileToBase64(file);
       const { text } = await aiPost<{ text: string }>("/parse-resume", {

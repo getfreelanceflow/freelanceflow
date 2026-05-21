@@ -10,7 +10,7 @@ router.use(requireUser);
 
 async function chat(system: string, user: string, maxTokens = 800): Promise<string> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
+    model: "gpt-4o-mini",
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
