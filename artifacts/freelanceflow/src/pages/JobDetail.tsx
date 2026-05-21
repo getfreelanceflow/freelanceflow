@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Bookmark, Briefcase, Calendar, DollarSign, Star, Zap } from "lucide-react";
+import { ArrowLeft, Bookmark, Briefcase, Calendar, DollarSign, MapPin, Star, Zap } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -83,6 +83,12 @@ export default function JobDetail() {
             <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4" /> {job.platform}</span>
             <span className="flex items-center gap-1.5"><DollarSign className="h-4 w-4" /> ${job.budgetMin} - ${job.budgetMax}</span>
             <span className="flex items-center gap-1.5"><Calendar className="h-4 w-4" /> {new Date(job.postedAt).toLocaleDateString()}</span>
+            {job.location ? (
+              <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /> {job.location}</span>
+            ) : null}
+            <Badge variant="outline" className="capitalize">
+              {job.jobType === "onsite" ? "In-person" : job.jobType}
+            </Badge>
           </div>
         </div>
         <div className="flex gap-3 w-full md:w-auto">

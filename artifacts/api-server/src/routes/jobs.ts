@@ -92,6 +92,12 @@ router.get("/jobs", async (req, res) => {
     if (query.platform) {
       conditions.push(ilike(jobs.platform, `%${query.platform}%`));
     }
+    if (query.jobType && query.jobType !== "any") {
+      conditions.push(eq(jobs.jobType, query.jobType));
+    }
+    if (query.location) {
+      conditions.push(ilike(jobs.location, `%${query.location}%`));
+    }
     if (query.postedWithin && query.postedWithin !== "any") {
       const hoursMap: Record<string, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
       const hours = hoursMap[query.postedWithin];

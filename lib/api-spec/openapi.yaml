@@ -65,6 +65,15 @@ paths:
           schema:
             type: string
             enum: [24h, 7d, 30d, any]
+        - name: jobType
+          in: query
+          schema:
+            type: string
+            enum: [remote, onsite, hybrid, any]
+        - name: location
+          in: query
+          schema:
+            type: string
       responses:
         "200":
           description: List of jobs
@@ -486,6 +495,10 @@ components:
           type: ["string", "null"]
         clientRating:
           type: ["number", "null"]
+        jobType:
+          type: string
+        location:
+          type: ["string", "null"]
 
     Proposal:
       type: object

@@ -28,6 +28,9 @@ export interface Job {
   clientName?: string | null;
   /** @nullable */
   clientRating?: number | null;
+  jobType?: string;
+  /** @nullable */
+  location?: string | null;
 }
 
 export type ProposalStatus = typeof ProposalStatus[keyof typeof ProposalStatus];
@@ -175,6 +178,8 @@ minBudget?: number;
 maxBudget?: number;
 platform?: string;
 postedWithin?: ListJobsPostedWithin;
+jobType?: ListJobsJobType;
+location?: string;
 };
 
 export type ListJobsPostedWithin = typeof ListJobsPostedWithin[keyof typeof ListJobsPostedWithin];
@@ -184,6 +189,16 @@ export const ListJobsPostedWithin = {
   '24h': '24h',
   '7d': '7d',
   '30d': '30d',
+  any: 'any',
+} as const;
+
+export type ListJobsJobType = typeof ListJobsJobType[keyof typeof ListJobsJobType];
+
+
+export const ListJobsJobType = {
+  remote: 'remote',
+  onsite: 'onsite',
+  hybrid: 'hybrid',
   any: 'any',
 } as const;
 

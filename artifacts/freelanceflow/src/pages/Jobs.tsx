@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X } from "lucide-react";
+import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin } from "lucide-react";
 
 const POSTED_WITHIN_OPTIONS = [
   { value: "any", label: "Any time" },
@@ -35,6 +35,15 @@ const PLATFORM_OPTIONS = [
 
 type PostedWithin = (typeof POSTED_WITHIN_OPTIONS)[number]["value"];
 
+const JOB_TYPE_OPTIONS = [
+  { value: "any", label: "Remote & in-person" },
+  { value: "remote", label: "Remote only" },
+  { value: "onsite", label: "In-person (near me)" },
+  { value: "hybrid", label: "Hybrid" },
+] as const;
+
+type JobType = (typeof JOB_TYPE_OPTIONS)[number]["value"];
+
 export default function Jobs() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -43,6 +52,14 @@ export default function Jobs() {
   const [postedWithin, setPostedWithin] = useState<PostedWithin>("any");
   const [minBudget, setMinBudget] = useState("");
   const [maxBudget, setMaxBudget] = useState("");
+  const [jobType, setJobType] = useState<JobType>("any");
+  const [location, setLocation] = useState("");
+  const [debouncedLocation, setDebouncedLocation] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedLocation(location.trim()), 300);
+    return () => clearTimeout(t);
+  }, [location]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 250);
@@ -59,6 +76,8 @@ export default function Jobs() {
     postedWithin: postedWithin !== "any" ? postedWithin : undefined,
     minBudget: Number.isFinite(minBudgetNum) ? minBudgetNum : undefined,
     maxBudget: Number.isFinite(maxBudgetNum) ? maxBudgetNum : undefined,
+    jobType: jobType !== "any" ? jobType : undefined,
+    location: debouncedLocation || undefined,
   };
 
   const { data: jobs, isLoading, isFetching, isError, error, refetch } = useListJobs(queryParams, {
@@ -76,7 +95,9 @@ export default function Jobs() {
     platform !== "all" ||
     postedWithin !== "any" ||
     minBudget !== "" ||
-    maxBudget !== "";
+    maxBudget !== "" ||
+    jobType !== "any" ||
+    debouncedLocation.length > 0;
 
   const clearAllFilters = () => {
     setSearch("");
@@ -85,6 +106,8 @@ export default function Jobs() {
     setPostedWithin("any");
     setMinBudget("");
     setMaxBudget("");
+    setJobType("any");
+    setLocation("");
   };
 
   const saveJob = useSaveJob();
@@ -165,6 +188,27 @@ export default function Jobs() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card/30 p-3">
+        <Select value={jobType} onValueChange={(v) => setJobType(v as JobType)}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Job type" />
+          </SelectTrigger>
+          <SelectContent>
+            {JOB_TYPE_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="relative flex-1 min-w-[180px] max-w-xs">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="City, state, or zip"
+            className="pl-9"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+        </div>
         <Select value={platform} onValueChange={setPlatform}>
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Platform" />
@@ -263,6 +307,22 @@ export default function Jobs() {
                     <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> {job.platform}</span>
                       <span className="flex items-center gap-1"><DollarSign className="h-4 w-4" /> ${job.budgetMin} - ${job.budgetMax}</span>
+                      {job.location ? (
+                        <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {job.location}</span>
+                      ) : null}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {job.jobType === "onsite" ? (
+                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs">
+                          In-person
+                        </Badge>
+                      ) : job.jobType === "hybrid" ? (
+                        <Badge variant="outline" className="border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-xs">
+                          Hybrid
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-xs">Remote</Badge>
+                      )}
                     </div>
                   </div>
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 flex-shrink-0 flex items-center gap-1">

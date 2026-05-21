@@ -21,4 +21,7 @@ export interface Job {
   clientName?: string | null;
   /** @nullable */
   clientRating?: number | null;
+  jobType?: string;
+  /** @nullable */
+  location?: string | null;
 }

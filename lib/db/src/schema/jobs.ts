@@ -15,6 +15,8 @@ export const jobs = pgTable("jobs", {
   successScore: numeric("success_score", { precision: 5, scale: 2 }).notNull().default("0"),
   clientName: text("client_name"),
   clientRating: numeric("client_rating", { precision: 3, scale: 1 }),
+  jobType: text("job_type").notNull().default("remote"),
+  location: text("location"),
 });
 
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true });

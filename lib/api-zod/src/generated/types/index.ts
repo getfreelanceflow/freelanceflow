@@ -13,6 +13,7 @@ export * from './globalSearchParams';
 export * from './globalSearchResults';
 export * from './healthStatus';
 export * from './job';
+export * from './listJobsJobType';
 export * from './listJobsParams';
 export * from './listJobsPostedWithin';
 export * from './notification';

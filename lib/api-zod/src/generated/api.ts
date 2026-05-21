@@ -26,7 +26,9 @@ export const ListJobsQueryParams = zod.object({
   "minBudget": zod.coerce.number().optional(),
   "maxBudget": zod.coerce.number().optional(),
   "platform": zod.coerce.string().optional(),
-  "postedWithin": zod.enum(['24h', '7d', '30d', 'any']).optional()
+  "postedWithin": zod.enum(['24h', '7d', '30d', 'any']).optional(),
+  "jobType": zod.enum(['remote', 'onsite', 'hybrid', 'any']).optional(),
+  "location": zod.coerce.string().optional()
 })
 
 export const ListJobsResponseItem = zod.object({
@@ -41,7 +43,9 @@ export const ListJobsResponseItem = zod.object({
   "platform": zod.string(),
   "successScore": zod.number(),
   "clientName": zod.string().nullish(),
-  "clientRating": zod.number().nullish()
+  "clientRating": zod.number().nullish(),
+  "jobType": zod.string().optional(),
+  "location": zod.string().nullish()
 })
 export const ListJobsResponse = zod.array(ListJobsResponseItem)
 
@@ -114,7 +118,9 @@ export const GetJobResponse = zod.object({
   "platform": zod.string(),
   "successScore": zod.number(),
   "clientName": zod.string().nullish(),
-  "clientRating": zod.number().nullish()
+  "clientRating": zod.number().nullish(),
+  "jobType": zod.string().optional(),
+  "location": zod.string().nullish()
 })
 
 
@@ -193,7 +199,9 @@ export const ListSavedJobsResponseItem = zod.object({
   "platform": zod.string(),
   "successScore": zod.number(),
   "clientName": zod.string().nullish(),
-  "clientRating": zod.number().nullish()
+  "clientRating": zod.number().nullish(),
+  "jobType": zod.string().optional(),
+  "location": zod.string().nullish()
 }).optional()
 })
 export const ListSavedJobsResponse = zod.array(ListSavedJobsResponseItem)
@@ -263,7 +271,9 @@ export const GetTopJobsResponseItem = zod.object({
   "platform": zod.string(),
   "successScore": zod.number(),
   "clientName": zod.string().nullish(),
-  "clientRating": zod.number().nullish()
+  "clientRating": zod.number().nullish(),
+  "jobType": zod.string().optional(),
+  "location": zod.string().nullish()
 })
 export const GetTopJobsResponse = zod.array(GetTopJobsResponseItem)
 
