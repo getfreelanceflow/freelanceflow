@@ -76,8 +76,6 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@clerk/react": "^6.6.4",
-    "mammoth": "^1.12.0",
-    "pdfjs-dist": "^5.7.284"
+    "@clerk/react": "^6.6.4"
   }
 }
