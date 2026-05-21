@@ -58,22 +58,38 @@ export default function Jobs() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Search jobs, skills, or clients..." 
+            placeholder="Search by title, skill, category, client, or platform..." 
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={category} onValueChange={setCategory}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            <SelectItem value="development">Development</SelectItem>
-            <SelectItem value="design">Design</SelectItem>
-            <SelectItem value="marketing">Marketing</SelectItem>
-            <SelectItem value="writing">Writing</SelectItem>
+            <SelectItem value="Web Development">Web Development</SelectItem>
+            <SelectItem value="Mobile Development">Mobile Development</SelectItem>
+            <SelectItem value="Backend Development">Backend Development</SelectItem>
+            <SelectItem value="DevOps">DevOps</SelectItem>
+            <SelectItem value="Data Science">Data Science</SelectItem>
+            <SelectItem value="AI/ML">AI / ML</SelectItem>
+            <SelectItem value="UI/UX Design">UI / UX Design</SelectItem>
+            <SelectItem value="Graphic Design">Graphic Design</SelectItem>
+            <SelectItem value="Writing">Writing</SelectItem>
+            <SelectItem value="Marketing">Marketing</SelectItem>
+            <SelectItem value="SEO">SEO</SelectItem>
+            <SelectItem value="Video">Video</SelectItem>
+            <SelectItem value="Voice">Voice / Audio</SelectItem>
+            <SelectItem value="Virtual Assistant">Virtual Assistant</SelectItem>
+            <SelectItem value="Sales">Sales</SelectItem>
+            <SelectItem value="Customer Support">Customer Support</SelectItem>
+            <SelectItem value="Finance">Finance</SelectItem>
+            <SelectItem value="Legal">Legal</SelectItem>
+            <SelectItem value="Translation">Translation</SelectItem>
+            <SelectItem value="Photography">Photography</SelectItem>
           </SelectContent>
         </Select>
       </div>
