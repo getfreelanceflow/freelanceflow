@@ -61,6 +61,7 @@ export default function ResumeMatch() {
       const { text } = await aiPost<{ text: string }>("/parse-resume", {
         fileBase64,
         fileName: file.name,
+        mimeType: file.type || undefined,
       });
       setResumeText(text);
     } catch (err) {
@@ -88,12 +89,12 @@ export default function ResumeMatch() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Upload className="h-4 w-4" />
-              Upload resume (PDF, DOCX, or TXT)
+              Upload resume (PDF, DOCX, TXT, or photo)
             </Label>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.txt"
+              accept=".pdf,.docx,.txt,image/*"
               onChange={onFileUpload}
               className="hidden"
             />
@@ -107,7 +108,7 @@ export default function ResumeMatch() {
               {parsing ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Extracting text…</>
               ) : (
-                <><Upload className="mr-2 h-4 w-4" /> Choose file (PDF, DOCX, TXT)</>
+                <><Upload className="mr-2 h-4 w-4" /> Choose file or photo</>
               )}
             </Button>
             {fileError && <p className="text-xs text-destructive">{fileError}</p>}

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
-import { UserButton } from "@clerk/react";
+import { UserButton, useClerk, useUser } from "@clerk/react";
+import { LogOut } from "lucide-react";
 import {
   LayoutDashboard,
   Briefcase,
@@ -90,6 +91,31 @@ const navGroups: { label: string; items: { href: string; label: string; icon: ty
   },
 ];
 
+function AccountLabel() {
+  const { user } = useUser();
+  const label = user?.primaryEmailAddress?.emailAddress ?? user?.fullName ?? "My Account";
+  return (
+    <span className="truncate text-sm font-medium text-sidebar-foreground" title={label}>
+      {label}
+    </span>
+  );
+}
+
+function SignOutButton() {
+  const { signOut } = useClerk();
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="w-full justify-start gap-2"
+      onClick={() => signOut({ redirectUrl: "/" })}
+    >
+      <LogOut className="h-4 w-4" />
+      Sign out
+    </Button>
+  );
+}
+
 function SidebarNav() {
   const [location] = useLocation();
 
@@ -127,11 +153,12 @@ function SidebarNav() {
           </div>
         ))}
       </nav>
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-2">
         <div className="flex items-center gap-3 px-3 py-2">
           <UserButton appearance={{ elements: { userButtonAvatarBox: "h-8 w-8" } }} />
-          <span className="text-sm font-medium text-sidebar-foreground">My Account</span>
+          <AccountLabel />
         </div>
+        <SignOutButton />
       </div>
     </div>
   );
