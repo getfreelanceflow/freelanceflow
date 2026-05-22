@@ -18,10 +18,14 @@ import parseResumeRouter from "./parseResume";
 import demoDataRouter from "./demoData";
 import searchRouter from "./search";
 import notificationsRouter from "./notifications";
+import { servicePackagesRouter } from "./servicePackages";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+// Register servicePackagesRouter early — its public routes must run before
+// other routers' top-level requireUser middleware can intercept them.
+router.use(servicePackagesRouter);
 router.use(jobsRouter);
 router.use(proposalsRouter);
 router.use(savedJobsRouter);

@@ -12,3 +12,4 @@ export * from "./timeEntries";
 export * from "./tasks";
 export * from "./expenses";
 export * from "./goals";
+export * from "./servicePackages";

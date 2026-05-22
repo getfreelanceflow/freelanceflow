@@ -323,6 +323,39 @@ export const api = {
     customFetch<Goal>(`${base}/goals/${id}`, j(b, "PATCH")),
   deleteGoal: (id: number) =>
     customFetch<null>(`${base}/goals/${id}`, { method: "DELETE" }),
+
+  // Service Packages
+  listPackages: () => customFetch<ServicePackage[]>(`${base}/packages`),
+  createPackage: (b: Partial<ServicePackage>) =>
+    customFetch<ServicePackage>(`${base}/packages`, j(b)),
+  updatePackage: (id: number, b: Partial<ServicePackage>) =>
+    customFetch<ServicePackage>(`${base}/packages/${id}`, j(b, "PATCH")),
+  deletePackage: (id: number) =>
+    customFetch<null>(`${base}/packages/${id}`, { method: "DELETE" }),
+  getPublicPackage: (slug: string) =>
+    customFetch<ServicePackage>(`${base}/packages/public/${slug}`),
+  inquirePackage: (slug: string) =>
+    customFetch<{ ok: boolean }>(`${base}/packages/public/${slug}/inquire`, j({})),
+};
+
+export type ServicePackage = {
+  id: number;
+  userId: string;
+  slug: string;
+  title: string;
+  tagline: string | null;
+  description: string;
+  price: string;
+  currency: string;
+  deliveryDays: number;
+  revisions: number;
+  deliverables: string[];
+  category: string | null;
+  ctaUrl: string | null;
+  isPublic: boolean;
+  views: number;
+  inquiries: number;
+  createdAt: string;
 };
 
 export type TimeEntry = {

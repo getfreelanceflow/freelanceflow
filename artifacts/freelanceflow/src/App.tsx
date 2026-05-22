@@ -28,6 +28,8 @@ import TimeTracker from "@/pages/TimeTracker";
 import Tasks from "@/pages/Tasks";
 import Expenses from "@/pages/Expenses";
 import Goals from "@/pages/Goals";
+import Packages from "@/pages/Packages";
+import PublicPackage from "@/pages/PublicPackage";
 import Contract from "@/pages/Contract";
 import Negotiate from "@/pages/Negotiate";
 import SkillGap from "@/pages/SkillGap";
@@ -97,6 +99,7 @@ function ClerkProviderWithRoutes() {
           <Switch>
             <Route path="/" component={Landing} />
             <Route path="/pricing" component={Pricing} />
+            <Route path="/p/:slug" component={PublicPackage} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
 
@@ -120,6 +123,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/tasks"><ProtectedRoute component={Tasks} /></Route>
             <Route path="/expenses"><ProtectedRoute component={Expenses} /></Route>
             <Route path="/goals"><ProtectedRoute component={Goals} /></Route>
+            <Route path="/packages"><ProtectedRoute component={Packages} /></Route>
             <Route path="/contract"><ProtectedRoute component={Contract} /></Route>
             <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
             <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>

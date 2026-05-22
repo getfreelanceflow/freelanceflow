@@ -31,6 +31,7 @@ import {
   AlarmClock,
   Linkedin,
   BookOpenCheck,
+  Package as PackageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -58,6 +59,7 @@ const navGroups: { labelKey: string; items: { href: string; labelKey: string; ic
     labelKey: "nav.group.business",
     items: [
       { href: "/clients", labelKey: "nav.clients", icon: Users },
+      { href: "/packages", labelKey: "nav.packages", icon: PackageIcon },
       { href: "/invoices", labelKey: "nav.invoices", icon: Receipt },
       { href: "/earnings", labelKey: "nav.earnings", icon: TrendingUp },
       { href: "/expenses", labelKey: "nav.expenses", icon: Wallet },
