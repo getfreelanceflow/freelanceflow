@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { seedJobsIfEmpty } from "./lib/seedJobs";
 
 const rawPort = process.env["PORT"];
 
@@ -22,4 +23,8 @@ app.listen(port, (err) => {
   }
 
   logger.info({ port }, "Server listening");
+
+  // Idempotent seed: only inserts if the jobs table is empty. Runs after the
+  // server is accepting connections so health checks aren't blocked.
+  void seedJobsIfEmpty();
 });
