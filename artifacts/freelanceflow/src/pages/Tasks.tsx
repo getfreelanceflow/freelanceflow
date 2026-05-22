@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,7 @@ const priorityColor: Record<string, string> = {
 
 export default function Tasks() {
   const qc = useQueryClient();
-  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: api.listTasks });
+  const { data: tasks = [], isLoading } = useQuery({ queryKey: ["tasks"], queryFn: api.listTasks });
 
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
@@ -116,7 +117,15 @@ export default function Tasks() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {tasks.filter((t) => t.status === g.status).map((t) => (
+              {isLoading
+                ? [1, 2].map((i) => (
+                    <div key={i} className="rounded-lg border p-3 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  ))
+                : null}
+              {!isLoading && tasks.filter((t) => t.status === g.status).map((t) => (
                 <div key={t.id} className="flex items-start justify-between rounded-lg border p-3 gap-2">
                   <button onClick={() => cycleStatus(t)} className="mt-1">
                     {t.status === "done" ? (
@@ -141,8 +150,10 @@ export default function Tasks() {
                   </Button>
                 </div>
               ))}
-              {tasks.filter((t) => t.status === g.status).length === 0 && (
-                <p className="text-xs text-muted-foreground py-2">Nothing here</p>
+              {!isLoading && tasks.filter((t) => t.status === g.status).length === 0 && (
+                <div className="py-6 text-center text-xs text-muted-foreground">
+                  {g.status === "todo" ? "Nothing to do yet" : g.status === "in_progress" ? "Nothing in progress" : "Nothing done yet"}
+                </div>
               )}
             </CardContent>
           </Card>

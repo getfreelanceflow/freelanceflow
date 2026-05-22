@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import { Plus, Trash2, Target, Pencil } from "lucide-react";
 
 export default function Goals() {
   const qc = useQueryClient();
-  const { data: goals = [] } = useQuery({ queryKey: ["goals"], queryFn: api.listGoals });
+  const { data: goals = [], isLoading } = useQuery({ queryKey: ["goals"], queryFn: api.listGoals });
 
   const [title, setTitle] = useState("");
   const [type, setType] = useState<Goal["type"]>("earnings");
@@ -104,7 +105,22 @@ export default function Goals() {
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
-        {goals.map((g) => {
+        {isLoading
+          ? [1, 2].map((i) => (
+              <Card key={i}>
+                <CardHeader className="pb-3 space-y-2">
+                  <Skeleton className="h-5 w-2/3" />
+                  <Skeleton className="h-4 w-1/3" />
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-2 w-full" />
+                  <Skeleton className="h-8 w-full" />
+                </CardContent>
+              </Card>
+            ))
+          : null}
+        {!isLoading && goals.map((g) => {
           const current = parseFloat(g.currentValue);
           const tgt = parseFloat(g.target);
           const pct = tgt > 0 ? Math.min(100, (current / tgt) * 100) : 0;
@@ -147,8 +163,12 @@ export default function Goals() {
             </Card>
           );
         })}
-        {goals.length === 0 && (
-          <p className="text-sm text-muted-foreground col-span-2">No goals yet. Set one above!</p>
+        {!isLoading && goals.length === 0 && (
+          <div className="col-span-2 py-12 text-center border rounded-lg bg-card/40">
+            <Target className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <h3 className="text-base font-medium">No goals yet</h3>
+            <p className="text-sm text-muted-foreground mt-1">Set a target above to start tracking your progress.</p>
+          </div>
         )}
       </div>
     </div>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -30,7 +31,7 @@ const CATEGORIES = [
 
 export default function Expenses() {
   const qc = useQueryClient();
-  const { data: expenses = [] } = useQuery({ queryKey: ["expenses"], queryFn: api.listExpenses });
+  const { data: expenses = [], isLoading } = useQuery({ queryKey: ["expenses"], queryFn: api.listExpenses });
   const { data: summary } = useQuery({ queryKey: ["expenses-summary"], queryFn: api.expensesSummary });
 
   const [description, setDescription] = useState("");
@@ -155,8 +156,21 @@ export default function Expenses() {
       <Card>
         <CardHeader><CardTitle>Recent Expenses</CardTitle></CardHeader>
         <CardContent>
-          {expenses.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No expenses yet.</p>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-lg border p-3 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              ))}
+            </div>
+          ) : expenses.length === 0 ? (
+            <div className="py-10 text-center">
+              <Receipt className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <h3 className="text-base font-medium">No expenses logged</h3>
+              <p className="text-sm text-muted-foreground mt-1">Log your first expense above to start tracking deductibles.</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {expenses.map((e) => (

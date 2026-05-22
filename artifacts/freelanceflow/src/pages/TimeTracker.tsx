@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Play, Square, Trash2, Clock, DollarSign } from "lucide-react";
 
 export default function TimeTracker() {
   const qc = useQueryClient();
-  const { data: entries = [] } = useQuery({ queryKey: ["time-entries"], queryFn: api.listTimeEntries });
+  const { data: entries = [], isLoading } = useQuery({ queryKey: ["time-entries"], queryFn: api.listTimeEntries });
   const { data: summary } = useQuery({ queryKey: ["time-summary"], queryFn: api.timeSummary });
 
   const [description, setDescription] = useState("");
@@ -166,8 +167,21 @@ export default function TimeTracker() {
           <CardTitle>Recent Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No entries yet.</p>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="rounded-lg border p-3 space-y-2">
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-3 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="py-10 text-center">
+              <Clock className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <h3 className="text-base font-medium">No time entries yet</h3>
+              <p className="text-sm text-muted-foreground mt-1">Start a timer above to begin tracking billable work.</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {entries.map((e) => (
