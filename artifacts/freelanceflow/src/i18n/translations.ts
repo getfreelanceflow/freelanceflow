@@ -46,6 +46,7 @@ export const translations: Record<Language, Dict> = {
     "nav.skillGap": "Skill Gap",
     "nav.templates": "Templates",
     "nav.profile": "Profile & Bio",
+    "nav.contact": "Contact Us",
 
     // Account
     "account.signOut": "Sign out",
@@ -167,6 +168,7 @@ export const translations: Record<Language, Dict> = {
     "nav.skillGap": "Brecha de habilidades",
     "nav.templates": "Plantillas",
     "nav.profile": "Perfil y biografía",
+    "nav.contact": "Contáctanos",
 
     // Account
     "account.signOut": "Cerrar sesión",

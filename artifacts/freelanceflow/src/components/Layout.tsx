@@ -93,6 +93,7 @@ const navGroups: { labelKey: string; items: { href: string; labelKey: string; ic
       { href: "/skill-gap", labelKey: "nav.skillGap", icon: BookOpen },
       { href: "/templates", labelKey: "nav.templates", icon: FileStack },
       { href: "/profile", labelKey: "nav.profile", icon: User },
+      { href: "/contact", labelKey: "nav.contact", icon: Mail },
     ],
   },
 ];

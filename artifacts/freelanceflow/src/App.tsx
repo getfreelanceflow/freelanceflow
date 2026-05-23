@@ -41,6 +41,7 @@ import LatePayment from "@/pages/LatePayment";
 import LinkedInPost from "@/pages/LinkedInPost";
 import CaseStudy from "@/pages/CaseStudy";
 import NicheFinder from "@/pages/NicheFinder";
+import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -99,6 +100,7 @@ function ClerkProviderWithRoutes() {
           <Switch>
             <Route path="/" component={Landing} />
             <Route path="/pricing" component={Pricing} />
+            <Route path="/contact" component={Contact} />
             <Route path="/p/:slug" component={PublicPackage} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />

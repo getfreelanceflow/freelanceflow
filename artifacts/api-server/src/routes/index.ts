@@ -19,13 +19,15 @@ import demoDataRouter from "./demoData";
 import searchRouter from "./search";
 import notificationsRouter from "./notifications";
 import { servicePackagesRouter } from "./servicePackages";
+import contactRouter from "./contact";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-// Register servicePackagesRouter early — its public routes must run before
+// Register public routers early — their public routes must run before
 // other routers' top-level requireUser middleware can intercept them.
 router.use(servicePackagesRouter);
+router.use(contactRouter);
 router.use(jobsRouter);
 router.use(proposalsRouter);
 router.use(savedJobsRouter);

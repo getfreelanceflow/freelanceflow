@@ -333,10 +333,33 @@ export const api = {
   deletePackage: (id: number) =>
     customFetch<null>(`${base}/packages/${id}`, { method: "DELETE" }),
   getPublicPackage: (slug: string) =>
-    customFetch<ServicePackage>(`${base}/packages/public/${slug}`),
-  inquirePackage: (slug: string) =>
-    customFetch<{ ok: boolean }>(`${base}/packages/public/${slug}/inquire`, j({})),
+    customFetch<PublicServicePackage>(`${base}/packages/public/${slug}`),
+  inquirePackage: (
+    slug: string,
+    body?: { name?: string; email?: string; message?: string },
+  ) =>
+    customFetch<{ ok: boolean; delivered?: boolean }>(
+      `${base}/packages/public/${slug}/inquire`,
+      j(body ?? {}),
+    ),
+
+  // Contact (site-wide)
+  sendContactMessage: (b: {
+    name: string;
+    email: string;
+    subject?: string;
+    message: string;
+  }) =>
+    customFetch<{ ok: boolean; delivered?: boolean; note?: string }>(
+      `${base}/contact`,
+      j(b),
+    ),
 };
+
+export type PublicServicePackage = Omit<
+  ServicePackage,
+  "userId" | "id" | "createdAt"
+>;
 
 export type ServicePackage = {
   id: number;

@@ -3,7 +3,25 @@ import { z } from "zod";
 import { db } from "@workspace/db";
 import { servicePackages } from "@workspace/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { createClerkClient } from "@clerk/express";
 import { requireUser, type AuthedRequest } from "../lib/requireUser";
+import { sendEmail, escapeHtml } from "../lib/email";
+
+const clerkSecret = process.env.CLERK_SECRET_KEY;
+const clerk = clerkSecret ? createClerkClient({ secretKey: clerkSecret }) : null;
+
+async function getUserEmail(userId: string): Promise<string | null> {
+  if (!clerk) return null;
+  try {
+    const u = await clerk.users.getUser(userId);
+    const primaryId = u.primaryEmailAddressId;
+    const primary =
+      u.emailAddresses.find((e) => e.id === primaryId) ?? u.emailAddresses[0];
+    return primary?.emailAddress ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -31,10 +49,12 @@ const upsertSchema = z.object({
 // Minimal in-memory IP rate limit for public endpoints. Not durable across
 // restarts or instances, but stops trivial counter-inflation by a single client.
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
-function rateLimit(windowMs: number, max: number) {
+function rateLimit(bucketName: string, windowMs: number, max: number) {
   return function (req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) {
     const ip = (req.ip || req.socket.remoteAddress || "unknown").toString();
-    const key = `${req.path}::${ip}`;
+    // Key by route class (bucketName), NOT req.path — otherwise an attacker
+    // can bypass the limit by rotating across many slugs.
+    const key = `${bucketName}::${ip}`;
     const now = Date.now();
     const bucket = rateBuckets.get(key);
     if (!bucket || bucket.resetAt < now) {
@@ -91,7 +111,7 @@ async function uniqueSlug(base: string): Promise<string> {
 }
 
 // PUBLIC: view a shared package by slug (no auth) — registered before requireUser
-router.get("/packages/public/:slug", rateLimit(60_000, 60), async (req, res) => {
+router.get("/packages/public/:slug", rateLimit("pkg_view", 60_000, 60), async (req, res) => {
   try {
     const slug = String(req.params.slug);
     const [pkg] = await db
@@ -111,21 +131,58 @@ router.get("/packages/public/:slug", rateLimit(60_000, 60), async (req, res) => 
   }
 });
 
-router.post("/packages/public/:slug/inquire", rateLimit(60_000, 10), async (req, res) => {
+const inquireSchema = z.object({
+  name: z.string().min(1).max(120).optional(),
+  email: z.string().email().optional(),
+  message: z.string().max(5000).optional(),
+});
+
+router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5), async (req, res) => {
   try {
     const slug = String(req.params.slug);
+    const parsed = inquireSchema.parse(req.body ?? {});
     const [pkg] = await db
-      .select({ id: servicePackages.id })
+      .select()
       .from(servicePackages)
       .where(and(eq(servicePackages.slug, slug), eq(servicePackages.isPublic, true)))
       .limit(1);
     if (!pkg) return res.status(404).json({ error: "Not found" });
+
     await db
       .update(servicePackages)
       .set({ inquiries: sql`${servicePackages.inquiries} + 1` })
       .where(eq(servicePackages.id, pkg.id));
-    res.json({ ok: true });
+
+    let delivered = false;
+    if (parsed.name && parsed.email && parsed.message) {
+      const ownerEmail = await getUserEmail(pkg.userId);
+      if (ownerEmail) {
+        const html = `
+          <h2>New inquiry for "${escapeHtml(pkg.title)}"</h2>
+          <p><strong>From:</strong> ${escapeHtml(parsed.name)} &lt;${escapeHtml(parsed.email)}&gt;</p>
+          <p><strong>Package:</strong> ${escapeHtml(pkg.title)} — ${escapeHtml(String(pkg.price))} ${escapeHtml(pkg.currency)}</p>
+          <hr/>
+          <p style="white-space:pre-wrap">${escapeHtml(parsed.message)}</p>
+          <hr/>
+          <p style="color:#888;font-size:12px">Sent via your FreelanceFlow AI shareable package page.</p>
+        `;
+        const text = `New inquiry for "${pkg.title}"\nFrom: ${parsed.name} <${parsed.email}>\n\n${parsed.message}`;
+        const result = await sendEmail({
+          to: ownerEmail,
+          subject: `[FreelanceFlow] New inquiry: ${pkg.title}`,
+          html,
+          text,
+          replyTo: parsed.email,
+        });
+        delivered = result.ok;
+      }
+    }
+
+    res.json({ ok: true, delivered });
   } catch (e) {
+    if (e instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid input", issues: e.issues });
+    }
     res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }
 });

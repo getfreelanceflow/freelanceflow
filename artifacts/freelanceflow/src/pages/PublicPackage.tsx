@@ -1,20 +1,36 @@
 import { useEffect, useState } from "react";
 import { useRoute } from "wouter";
-import { api, type ServicePackage } from "@/lib/api";
+import { api, type PublicServicePackage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, Clock, RefreshCw, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Check, Clock, RefreshCw, Sparkles, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 export default function PublicPackage() {
   const [, params] = useRoute("/p/:slug");
   const slug = params?.slug ?? "";
-  const [pkg, setPkg] = useState<ServicePackage | null>(null);
+  const [pkg, setPkg] = useState<PublicServicePackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [inquired, setInquired] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -37,15 +53,45 @@ export default function PublicPackage() {
     }
   }
 
-  function onCta() {
+  function onPrimary() {
     if (!pkg) return;
-    api.inquirePackage(pkg.slug).catch(() => {});
-    setInquired(true);
     const dest = safeCtaUrl(pkg.ctaUrl);
     if (dest) {
+      api.inquirePackage(pkg.slug).catch(() => {});
       window.location.href = dest;
-    } else {
-      toast.success("Thanks — the provider has been notified of your interest.");
+      return;
+    }
+    setContactOpen(true);
+  }
+
+  async function submitInquiry(e: React.FormEvent) {
+    e.preventDefault();
+    if (!pkg) return;
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      toast.error("Please fill in name, email, and message.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await api.inquirePackage(pkg.slug, {
+        name: name.trim(),
+        email: email.trim(),
+        message: message.trim(),
+      });
+      setInquired(true);
+      setContactOpen(false);
+      toast.success(
+        res.delivered
+          ? "Sent! The provider will reply to your email."
+          : "Inquiry received — the provider has been notified.",
+      );
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send inquiry");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -75,6 +121,8 @@ export default function PublicPackage() {
       </div>
     );
   }
+
+  const hasCta = !!safeCtaUrl(pkg.ctaUrl);
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,14 +192,28 @@ export default function PublicPackage() {
               </div>
             )}
 
-            <Button size="lg" className="w-full" onClick={onCta} disabled={inquired && !pkg.ctaUrl}>
-              <Sparkles className="h-4 w-4 mr-2" />
-              {inquired && !pkg.ctaUrl
-                ? "Inquiry sent"
-                : pkg.ctaUrl
-                  ? "Book this package"
-                  : "I'm interested"}
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button size="lg" className="flex-1" onClick={onPrimary} disabled={inquired && !hasCta}>
+                <Sparkles className="h-4 w-4 mr-2" />
+                {inquired && !hasCta
+                  ? "Inquiry sent"
+                  : hasCta
+                    ? "Book this package"
+                    : "I'm interested"}
+              </Button>
+              {!hasCta && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 sm:flex-none"
+                  onClick={() => setContactOpen(true)}
+                  disabled={inquired}
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email the provider
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
 
@@ -159,6 +221,62 @@ export default function PublicPackage() {
           Powered by FreelanceFlow AI
         </p>
       </div>
+
+      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Get in touch about "{pkg.title}"</DialogTitle>
+            <DialogDescription>
+              Send a message to the provider. They'll reply directly to your email.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={submitInquiry} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-name">Your name</Label>
+              <Input
+                id="inquiry-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Doe"
+                required
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-email">Email</Label>
+              <Input
+                id="inquiry-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                disabled={submitting}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="inquiry-message">Message</Label>
+              <Textarea
+                id="inquiry-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Tell the provider about your project, timeline, and any questions…"
+                rows={5}
+                required
+                disabled={submitting}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setContactOpen(false)} disabled={submitting}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Sending…" : "Send inquiry"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
