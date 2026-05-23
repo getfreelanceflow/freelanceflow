@@ -194,30 +194,32 @@ export default function Layout({ children }: LayoutProps) {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:px-6">
-          <div className="flex items-center gap-3 md:hidden">
+        <header className="sticky top-0 z-10 flex h-14 sm:h-16 items-center justify-between gap-2 border-b border-border bg-background/95 px-3 backdrop-blur md:px-6">
+          <div className="flex items-center gap-2 md:hidden min-w-0">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0">
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">{t("common.toggleNav")}</span>
                 </Button>
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="w-64 p-0 bg-sidebar border-r-sidebar-border"
+                className="w-72 max-w-[85vw] p-0 bg-sidebar border-r-sidebar-border"
               >
                 <SidebarNav />
               </SheetContent>
             </Sheet>
-            <span className="text-lg font-bold text-primary">FreelanceFlow.ai</span>
+            <span className="text-base sm:text-lg font-bold text-primary truncate">FreelanceFlow.ai</span>
           </div>
-          <div className="flex-1 max-w-md md:block">
+          <div className="hidden md:block flex-1 max-w-md">
             <GlobalSearch />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <CreditsPill />
-            <LanguageSwitcher />
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             <NotificationsBell />
           </div>
         </header>
