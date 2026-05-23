@@ -5,12 +5,63 @@ import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
 
 export const PLANS = {
-  free: { name: "Free", monthlyCredits: 5, allowAdvanced: false },
-  pro: { name: "Pro", monthlyCredits: 500, allowAdvanced: true },
-  proplus: { name: "Pro Plus", monthlyCredits: 2000, allowAdvanced: true },
+  free: {
+    name: "Free",
+    monthlyCredits: 5,
+    bonusCreditsPerMonth: 0,
+    allowAdvanced: false,
+    interval: "month" as const,
+    priceUsd: 0,
+  },
+  pro: {
+    name: "Pro",
+    monthlyCredits: 500,
+    bonusCreditsPerMonth: 0,
+    allowAdvanced: true,
+    interval: "month" as const,
+    priceUsd: 10,
+  },
+  proplus: {
+    name: "Pro Plus",
+    monthlyCredits: 2000,
+    bonusCreditsPerMonth: 0,
+    allowAdvanced: true,
+    interval: "month" as const,
+    priceUsd: 25,
+  },
+  pro_annual: {
+    name: "Pro (Annual)",
+    monthlyCredits: 500,
+    bonusCreditsPerMonth: 100,
+    allowAdvanced: true,
+    interval: "year" as const,
+    priceUsd: 96,
+  },
+  proplus_annual: {
+    name: "Pro Plus (Annual)",
+    monthlyCredits: 2000,
+    bonusCreditsPerMonth: 400,
+    allowAdvanced: true,
+    interval: "year" as const,
+    priceUsd: 240,
+  },
 } as const;
 
 export type PlanId = keyof typeof PLANS;
+
+/**
+ * Total credits granted per billing cycle (the period the user pays for).
+ * Monthly plans: monthly + bonus. Annual: (monthly + bonus) × 12.
+ */
+export function totalCreditsPerCycle(plan: PlanId): number {
+  const p = PLANS[plan];
+  const perMonth = p.monthlyCredits + p.bonusCreditsPerMonth;
+  return p.interval === "year" ? perMonth * 12 : perMonth;
+}
+
+export function isPaidPlan(plan: string): plan is Exclude<PlanId, "free"> {
+  return plan === "pro" || plan === "proplus" || plan === "pro_annual" || plan === "proplus_annual";
+}
 
 export const CREDIT_PACKS = {
   small: { credits: 50, priceUsd: 5, label: "Starter pack" },
@@ -157,12 +208,15 @@ export async function setPlan(
   },
 ): Promise<UserBilling> {
   await getOrCreateBilling(userId);
-  const planConfig = PLANS[plan];
+  // NOTE: setPlan no longer touches the credit balance. Credits are granted
+  // exclusively via grantCredits() (with dedupeKey) by the Stripe webhook
+  // handlers on subscription activation and renewal. This prevents
+  // double-granting that previously happened when both checkout.session.completed
+  // and the first invoice.paid fired.
   const [updated] = await db
     .update(userBilling)
     .set({
       plan,
-      credits: sql`GREATEST(${userBilling.credits}, ${planConfig.monthlyCredits})`,
       ...(stripeData?.stripeCustomerId ? { stripeCustomerId: stripeData.stripeCustomerId } : {}),
       stripeSubscriptionId: stripeData?.stripeSubscriptionId ?? null,
       subscriptionStatus: stripeData?.subscriptionStatus ?? null,
@@ -176,7 +230,7 @@ export async function setPlan(
 
 export function planFromPriceMetadata(meta: Record<string, string> | null | undefined): PlanId | null {
   const t = meta?.tier;
-  if (t === "pro" || t === "proplus") return t;
+  if (t === "pro" || t === "proplus" || t === "pro_annual" || t === "proplus_annual") return t;
   return null;
 }
 

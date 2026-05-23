@@ -8,6 +8,8 @@ import {
   CreateProposalBody,
 } from "@workspace/api-zod";
 import { requireUser, type AuthedRequest } from "../lib/requireUser";
+import { consumeCredits, refundCredits } from "../lib/billing";
+import { AI_COSTS } from "../lib/aiCosts";
 
 const router = Router();
 router.use(requireUser);
@@ -49,12 +51,26 @@ router.post("/proposals", async (req, res) => {
 
     let content: string;
     let successScore: number;
+    let creditTxId: string | null = null;
+    const proposalCost = AI_COSTS.proposal_create;
 
     if (body.content && body.content.trim().length > 0) {
       // Caller (Studio) already generated the content — just persist.
       content = body.content;
       successScore = Math.floor(Math.random() * 20) + 70;
     } else {
+      const gate = await consumeCredits(uid, proposalCost, "proposal_create");
+      if (!gate.ok) {
+        return res.status(402).json({
+          error: "insufficient_credits",
+          message: "Out of AI credits. Upgrade or buy a credit pack to continue.",
+          needed: gate.needed,
+          have: gate.have,
+          action: "proposal_create",
+        });
+      }
+      creditTxId = gate.txId;
+
       const systemPrompt = `You are FreelanceFlow AI, an expert freelance career assistant that writes high-converting proposals and helps users win more jobs. Write compelling, personalized, professional proposals that showcase the freelancer's skills and match the client's needs.`;
 
       const userPrompt = `Write a winning freelance proposal for the following job:
@@ -86,6 +102,9 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
       content = completion.choices[0]?.message?.content ?? "Unable to generate proposal.";
       successScore = Math.floor(Math.random() * 25) + 65;
     }
+
+    // Wrap downstream errors so we can refund a consumed credit.
+    const persist = async () => {
 
     const [proposal] = await db
       .insert(proposals)
@@ -126,6 +145,15 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
       createdAt: proposal.createdAt.toISOString(),
       updatedAt: proposal.updatedAt.toISOString(),
     });
+    };
+    try {
+      await persist();
+    } catch (innerErr) {
+      if (creditTxId) {
+        refundCredits(uid, proposalCost, creditTxId, "proposal_create_refund").catch(() => {});
+      }
+      throw innerErr;
+    }
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
   }

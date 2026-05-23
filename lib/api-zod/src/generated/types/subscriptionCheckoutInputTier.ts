@@ -12,4 +12,6 @@ export type SubscriptionCheckoutInputTier = typeof SubscriptionCheckoutInputTier
 export const SubscriptionCheckoutInputTier = {
   pro: 'pro',
   proplus: 'proplus',
+  pro_annual: 'pro_annual',
+  proplus_annual: 'proplus_annual',
 } as const;

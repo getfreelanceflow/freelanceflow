@@ -17,6 +17,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import CreditCostBadge from "@/components/CreditCostBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -389,6 +390,7 @@ export default function ProposalStudio() {
             </Link>
             <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2 mt-1">
               <Wand2 className="h-7 w-7 text-primary" /> AI Proposal Studio
+              <CreditCostBadge action="proposal_generate_draft" className="ml-2 text-xs" />
             </h1>
             <p className="text-muted-foreground mt-1">
               Analyze the job, draft your pitch, and refine it with one click.

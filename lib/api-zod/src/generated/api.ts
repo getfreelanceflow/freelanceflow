@@ -159,7 +159,11 @@ export const GetBillingCatalogResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "monthlyCredits": zod.number(),
-  "allowAdvanced": zod.boolean()
+  "bonusCreditsPerMonth": zod.number(),
+  "allowAdvanced": zod.boolean(),
+  "interval": zod.enum(['month', 'year']),
+  "priceUsd": zod.number(),
+  "totalCreditsPerCycle": zod.number()
 })),
   "creditPacks": zod.array(zod.object({
   "id": zod.string(),
@@ -174,7 +178,7 @@ export const GetBillingCatalogResponse = zod.object({
  * @summary Create Stripe Checkout session for a subscription
  */
 export const CreateSubscriptionCheckoutBody = zod.object({
-  "tier": zod.enum(['pro', 'proplus']),
+  "tier": zod.enum(['pro', 'proplus', 'pro_annual', 'proplus_annual']),
   "successUrl": zod.string().optional(),
   "cancelUrl": zod.string().optional()
 })
@@ -195,6 +199,15 @@ export const CreateCreditsCheckoutBody = zod.object({
 
 export const CreateCreditsCheckoutResponse = zod.object({
   "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary Credit cost per AI action
+ */
+export const GetAiCostsResponse = zod.object({
+  "costs": zod.record(zod.string(), zod.number()),
+  "labels": zod.record(zod.string(), zod.string())
 })
 
 

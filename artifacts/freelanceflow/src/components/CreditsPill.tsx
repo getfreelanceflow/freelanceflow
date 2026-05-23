@@ -1,10 +1,10 @@
 import { Link } from "wouter";
 import { Sparkles } from "lucide-react";
-import { useGetBillingMe } from "@workspace/api-client-react";
+import { useGetBillingMe, getGetBillingMeQueryKey } from "@workspace/api-client-react";
 
 export default function CreditsPill() {
   const { data, isLoading } = useGetBillingMe({
-    query: { refetchOnWindowFocus: true, staleTime: 30_000 },
+    query: { queryKey: getGetBillingMeQueryKey(), refetchOnWindowFocus: true, staleTime: 30_000 },
   });
 
   if (isLoading || !data) return null;

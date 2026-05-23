@@ -5,10 +5,15 @@
  * FreelanceFlow AI API
  * OpenAPI spec version: 0.1.0
  */
+import type { BillingPlanInterval } from './billingPlanInterval';
 
 export interface BillingPlan {
   id: string;
   name: string;
   monthlyCredits: number;
+  bonusCreditsPerMonth: number;
   allowAdvanced: boolean;
+  interval: BillingPlanInterval;
+  priceUsd: number;
+  totalCreditsPerCycle: number;
 }

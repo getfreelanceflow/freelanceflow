@@ -5,8 +5,8 @@ import {
   grantCredits,
   creditPackFromPriceMetadata,
   planFromPriceMetadata,
+  totalCreditsPerCycle,
   type PlanId,
-  PLANS,
 } from "./billing";
 import { db } from "@workspace/db";
 import { processedStripeEvents } from "@workspace/db/schema";
@@ -14,6 +14,30 @@ import { logger } from "./logger";
 
 function unixToDate(ts: number | null | undefined): Date | null {
   return ts ? new Date(ts * 1000) : null;
+}
+
+async function activateSubscription(
+  userId: string,
+  sub: Stripe.Subscription,
+  customerId: string | null,
+): Promise<void> {
+  const priceMeta = sub.items.data[0]?.price?.metadata as Record<string, string> | undefined;
+  const plan = planFromPriceMetadata(priceMeta) ?? "pro";
+  const periodEnd = unixToDate(
+    (sub as unknown as { current_period_end?: number }).current_period_end,
+  );
+  await setPlan(userId, plan, {
+    stripeCustomerId: customerId ?? undefined,
+    stripeSubscriptionId: sub.id,
+    subscriptionStatus: sub.status,
+    currentPeriodEnd: periodEnd,
+  });
+  const amount = totalCreditsPerCycle(plan);
+  await grantCredits(userId, amount, "subscription_activation", {
+    dedupeKey: `sub_init:${sub.id}`,
+    metadata: { subscriptionId: sub.id, plan },
+  });
+  logger.info({ userId, plan, subId: sub.id, granted: amount }, "subscription activated");
 }
 
 async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
@@ -28,18 +52,7 @@ async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.
     const subId =
       typeof session.subscription === "string" ? session.subscription : session.subscription.id;
     const sub = await stripe.subscriptions.retrieve(subId, { expand: ["items.data.price"] });
-    const priceMeta = sub.items.data[0]?.price?.metadata as Record<string, string> | undefined;
-    const plan = planFromPriceMetadata(priceMeta) ?? "pro";
-    const periodEnd = unixToDate(
-      (sub as unknown as { current_period_end?: number }).current_period_end,
-    );
-    await setPlan(userId, plan, {
-      stripeCustomerId: customerId ?? undefined,
-      stripeSubscriptionId: sub.id,
-      subscriptionStatus: sub.status,
-      currentPeriodEnd: periodEnd,
-    });
-    logger.info({ userId, plan, subId }, "subscription activated");
+    await activateSubscription(userId, sub, customerId ?? null);
     return;
   }
 
@@ -92,16 +105,23 @@ async function handleSubscriptionUpdated(_stripe: Stripe, sub: Stripe.Subscripti
 
 async function handleInvoicePaid(stripe: Stripe, invoice: Stripe.Invoice) {
   const subId = (invoice as unknown as { subscription?: string | null }).subscription ?? null;
-  if (!subId || invoice.billing_reason !== "subscription_cycle") return;
+  if (!subId) return;
+  // Renewals only — initial activation is handled by checkout.session.completed
+  // via activateSubscription() (which grants with dedupeKey `sub_init:<subId>`).
+  // Both signal the same intent for a brand-new subscription; we route the grant
+  // through the cycle event to avoid double-granting.
+  if (invoice.billing_reason !== "subscription_cycle") return;
   const sub = await stripe.subscriptions.retrieve(subId, { expand: ["items.data.price"] });
   const userId = sub.metadata?.userId as string | undefined;
   if (!userId) return;
   const priceMeta = sub.items.data[0]?.price?.metadata as Record<string, string> | undefined;
   const plan = planFromPriceMetadata(priceMeta) ?? "pro";
-  await grantCredits(userId, PLANS[plan].monthlyCredits, "monthly_renewal", {
+  const amount = totalCreditsPerCycle(plan);
+  await grantCredits(userId, amount, "subscription_renewal", {
     dedupeKey: `inv:${invoice.id}`,
-    metadata: { invoiceId: invoice.id, subscriptionId: sub.id },
+    metadata: { invoiceId: invoice.id, subscriptionId: sub.id, plan },
   });
+  logger.info({ userId, plan, granted: amount, invoiceId: invoice.id }, "subscription renewed");
 }
 
 /**

@@ -1,10 +1,38 @@
 import type Stripe from "stripe";
 import { PLANS, CREDIT_PACKS, type PlanId, type CreditPackId } from "./billing";
 
-const SUB_PRODUCTS: Record<PlanId, { name: string; description: string; unitAmount: number }> = {
-  free: { name: "Free", description: "Free plan", unitAmount: 0 },
-  pro: { name: "FreelanceFlow Pro", description: "500 AI credits/mo + all advanced features", unitAmount: 1000 },
-  proplus: { name: "FreelanceFlow Pro Plus", description: "2000 AI credits/mo + priority support", unitAmount: 2500 },
+type SubProduct = {
+  name: string;
+  description: string;
+  unitAmount: number;
+  interval: "month" | "year";
+};
+
+const SUB_PRODUCTS: Record<Exclude<PlanId, "free">, SubProduct> = {
+  pro: {
+    name: "FreelanceFlow Pro",
+    description: "500 AI credits/mo + all advanced features",
+    unitAmount: PLANS.pro.priceUsd * 100,
+    interval: "month",
+  },
+  proplus: {
+    name: "FreelanceFlow Pro Plus",
+    description: "2000 AI credits/mo + priority support",
+    unitAmount: PLANS.proplus.priceUsd * 100,
+    interval: "month",
+  },
+  pro_annual: {
+    name: "FreelanceFlow Pro — Annual",
+    description: "6,000 AI credits/yr + 1,200 bonus credits + 2 months free",
+    unitAmount: PLANS.pro_annual.priceUsd * 100,
+    interval: "year",
+  },
+  proplus_annual: {
+    name: "FreelanceFlow Pro Plus — Annual",
+    description: "24,000 AI credits/yr + 4,800 bonus credits + 2 months free",
+    unitAmount: PLANS.proplus_annual.priceUsd * 100,
+    interval: "year",
+  },
 };
 
 const PACK_PRODUCTS: Record<CreditPackId, { name: string; description: string; unitAmount: number }> = {
@@ -24,32 +52,40 @@ async function findProductByMetadata(stripe: Stripe, key: string, value: string)
   return search.data[0] ?? null;
 }
 
-async function findActivePriceForProduct(stripe: Stripe, productId: string) {
-  const list = await stripe.prices.list({ product: productId, active: true, limit: 5 });
-  return list.data[0] ?? null;
+async function findMatchingActivePrice(
+  stripe: Stripe,
+  productId: string,
+  match: (p: Stripe.Price) => boolean,
+) {
+  const list = await stripe.prices.list({ product: productId, active: true, limit: 100 });
+  return list.data.find(match) ?? null;
 }
 
 export async function ensureCatalog(stripe: Stripe): Promise<Catalog> {
   const catalog: Catalog = { subscriptions: {}, packs: {} };
 
-  for (const planId of ["pro", "proplus"] as const) {
+  for (const planId of ["pro", "proplus", "pro_annual", "proplus_annual"] as const) {
     const cfg = SUB_PRODUCTS[planId];
     let product = await findProductByMetadata(stripe, "tier", planId);
     if (!product) {
       product = await stripe.products.create({
         name: cfg.name,
         description: cfg.description,
-        metadata: { tier: planId, app: "freelanceflow" },
+        metadata: { tier: planId, app: "freelanceflow", interval: cfg.interval },
       });
     }
-    let price = await findActivePriceForProduct(stripe, product.id);
-    if (!price || price.unit_amount !== cfg.unitAmount || price.recurring?.interval !== "month") {
+    let price = await findMatchingActivePrice(
+      stripe,
+      product.id,
+      (p) => p.unit_amount === cfg.unitAmount && p.recurring?.interval === cfg.interval,
+    );
+    if (!price) {
       price = await stripe.prices.create({
         product: product.id,
         unit_amount: cfg.unitAmount,
         currency: "usd",
-        recurring: { interval: "month" },
-        metadata: { tier: planId },
+        recurring: { interval: cfg.interval },
+        metadata: { tier: planId, interval: cfg.interval },
       });
     }
     catalog.subscriptions[planId] = { productId: product.id, priceId: price.id };
@@ -66,8 +102,12 @@ export async function ensureCatalog(stripe: Stripe): Promise<Catalog> {
         metadata: { creditPack: packId, credits: String(credits), app: "freelanceflow" },
       });
     }
-    let price = await findActivePriceForProduct(stripe, product.id);
-    if (!price || price.unit_amount !== cfg.unitAmount || price.recurring) {
+    let price = await findMatchingActivePrice(
+      stripe,
+      product.id,
+      (p) => p.unit_amount === cfg.unitAmount && !p.recurring,
+    );
+    if (!price) {
       price = await stripe.prices.create({
         product: product.id,
         unit_amount: cfg.unitAmount,

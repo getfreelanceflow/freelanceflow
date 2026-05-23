@@ -10,9 +10,11 @@ import {
   getOrCreateBilling,
   PLANS,
   CREDIT_PACKS,
+  totalCreditsPerCycle,
   type PlanId,
   type CreditPackId,
 } from "../lib/billing";
+import { AI_COSTS, AI_ACTION_LABELS } from "../lib/aiCosts";
 import { getUncachableStripeClient, isStripeConfigured } from "../lib/stripeClient";
 import { ensureCatalog } from "../lib/stripeProducts";
 import { logger } from "../lib/logger";
@@ -36,12 +38,27 @@ router.get("/billing/me", requireUser, async (req, res) => {
 
 router.get("/billing/catalog", async (_req, res) => {
   res.json({
-    plans: Object.entries(PLANS).map(([id, p]) => ({ id, ...p })),
+    plans: Object.entries(PLANS).map(([id, p]) => ({
+      id,
+      ...p,
+      totalCreditsPerCycle: totalCreditsPerCycle(id as PlanId),
+    })),
     creditPacks: Object.entries(CREDIT_PACKS).map(([id, p]) => ({ id, ...p })),
   });
 });
 
-const SubscriptionBody = z.object({ tier: z.enum(["pro", "proplus"]), successUrl: z.string().optional(), cancelUrl: z.string().optional() });
+router.get("/billing/ai-costs", (_req, res) => {
+  res.json({
+    costs: AI_COSTS,
+    labels: AI_ACTION_LABELS,
+  });
+});
+
+const SubscriptionBody = z.object({
+  tier: z.enum(["pro", "proplus", "pro_annual", "proplus_annual"]),
+  successUrl: z.string().optional(),
+  cancelUrl: z.string().optional(),
+});
 const PackBody = z.object({ pack: z.enum(["small", "medium", "large"]), successUrl: z.string().optional(), cancelUrl: z.string().optional() });
 
 async function ensureCustomer(uid: string): Promise<string> {
@@ -89,7 +106,7 @@ router.post("/billing/checkout-subscription", requireUser, async (req, res) => {
     }
 
     const catalog = await ensureCatalog(stripe);
-    const entry = catalog.subscriptions[body.tier as Exclude<PlanId, "free">];
+    const entry = catalog.subscriptions[body.tier];
     if (!entry) return res.status(500).json({ error: "price_not_found" });
     const customerId = await ensureCustomer(uid);
     const origin = trustedOrigin();

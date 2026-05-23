@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@workspace/db";
 import { jobs } from "@workspace/db/schema";
 import { requireUser } from "../lib/requireUser";
+import { requireCredits } from "../lib/requireCredits";
 
 const router = Router();
 router.use(requireUser);
@@ -20,7 +21,7 @@ async function chat(system: string, user: string, maxTokens = 800): Promise<stri
   return completion.choices[0]?.message?.content ?? "";
 }
 
-router.post("/ai/bio", async (req, res) => {
+router.post("/ai/bio", requireCredits("bio"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -54,7 +55,7 @@ Requirements:
   }
 });
 
-router.post("/ai/cover-letter", async (req, res) => {
+router.post("/ai/cover-letter", requireCredits("cover_letter"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -87,7 +88,7 @@ Requirements:
   }
 });
 
-router.post("/ai/rate-calculator", async (req, res) => {
+router.post("/ai/rate-calculator", requireCredits("rate_calculator"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -147,7 +148,7 @@ Return JSON with this exact shape:
   }
 });
 
-router.post("/ai/predict-success", async (req, res) => {
+router.post("/ai/predict-success", requireCredits("predict_success"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -194,7 +195,7 @@ Return JSON with this exact shape:
   }
 });
 
-router.post("/ai/resume-match", async (req, res) => {
+router.post("/ai/resume-match", requireCredits("resume_match"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -296,7 +297,7 @@ Return ONLY the top 10 best-fitting jobs sorted by score descending.`;
   }
 });
 
-router.post("/ai/contract", async (req, res) => {
+router.post("/ai/contract", requireCredits("contract"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -329,7 +330,7 @@ Include sections: Parties, Scope of Work, Deliverables, Timeline, Compensation, 
   }
 });
 
-router.post("/ai/negotiate", async (req, res) => {
+router.post("/ai/negotiate", requireCredits("negotiate"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -355,7 +356,7 @@ Write a reply (200-300 words) the freelancer can send. Open with empathy, anchor
   }
 });
 
-router.post("/ai/skill-gap", async (req, res) => {
+router.post("/ai/skill-gap", requireCredits("skill_gap"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -398,7 +399,7 @@ Limit missingSkills to top 5.`;
   }
 });
 
-router.post("/ai/outreach", async (req, res) => {
+router.post("/ai/outreach", requireCredits("outreach"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -436,7 +437,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/discovery-questions", async (req, res) => {
+router.post("/ai/discovery-questions", requireCredits("discovery_questions"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -477,7 +478,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/scope-creep", async (req, res) => {
+router.post("/ai/scope-creep", requireCredits("scope_creep"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -510,7 +511,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/late-payment", async (req, res) => {
+router.post("/ai/late-payment", requireCredits("late_payment"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -550,7 +551,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/linkedin-post", async (req, res) => {
+router.post("/ai/linkedin-post", requireCredits("linkedin_post"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -586,7 +587,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/case-study", async (req, res) => {
+router.post("/ai/case-study", requireCredits("case_study"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -629,7 +630,7 @@ Output JSON:
   }
 });
 
-router.post("/ai/niche-finder", async (req, res) => {
+router.post("/ai/niche-finder", requireCredits("niche_finder"), async (req, res) => {
   try {
     const body = z
       .object({
@@ -674,7 +675,7 @@ Return 4 niches, ordered by profitability potential.`;
   }
 });
 
-router.post("/ai/dream-job", async (req, res) => {
+router.post("/ai/dream-job", requireCredits("dream_job"), async (req, res) => {
   try {
     const body = z
       .object({

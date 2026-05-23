@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CreditCostBadge from "@/components/CreditCostBadge";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Sparkles, Upload, Briefcase, ArrowRight } from "lucide-react";
 import { aiPost } from "@/lib/aiFetch";
@@ -76,7 +77,10 @@ export default function ResumeMatch() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Resume → Job Match</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Resume → Job Match</h1>
+          <CreditCostBadge action="resume_match" />
+        </div>
         <p className="text-muted-foreground">
           Upload or paste your resume — AI will rank the best-fit jobs for you.
         </p>

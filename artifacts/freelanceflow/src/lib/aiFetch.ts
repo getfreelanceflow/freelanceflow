@@ -36,6 +36,11 @@ export async function aiPost<T>(path: string, body: unknown): Promise<T> {
   if (res.status === 401) {
     throw new Error("Session expired. Please refresh the page and sign in again.");
   }
+  if (res.status === 402) {
+    const detail = await res.json().catch(() => null);
+    window.dispatchEvent(new CustomEvent("ff:insufficient-credits", { detail }));
+    throw new Error(detail?.message ?? "Out of AI credits.");
+  }
   if (!res.ok) {
     const detail = await res.json().catch(() => null);
     throw new Error(detail?.error ?? `${res.status} ${res.statusText}`);

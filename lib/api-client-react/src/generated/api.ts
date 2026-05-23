@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AiCostsResponse,
   AnalyzeJobInput,
   BillingCatalog,
   BillingError,
@@ -759,6 +760,83 @@ export const useCreateCreditsCheckout = <TError = ErrorType<BillingError>,
       > => {
       return useMutation(getCreateCreditsCheckoutMutationOptions(options));
     }
+
+export const getGetAiCostsUrl = () => {
+
+
+
+
+  return `/api/billing/ai-costs`
+}
+
+/**
+ * @summary Credit cost per AI action
+ */
+export const getAiCosts = async ( options?: RequestInit): Promise<AiCostsResponse> => {
+
+  return customFetch<AiCostsResponse>(getGetAiCostsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAiCostsQueryKey = () => {
+    return [
+    `/api/billing/ai-costs`
+    ] as const;
+    }
+
+
+export const getGetAiCostsQueryOptions = <TData = Awaited<ReturnType<typeof getAiCosts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAiCostsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAiCosts>>> = ({ signal }) => getAiCosts({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAiCosts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAiCostsQueryResult = NonNullable<Awaited<ReturnType<typeof getAiCosts>>>
+export type GetAiCostsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Credit cost per AI action
+ */
+
+export function useGetAiCosts<TData = Awaited<ReturnType<typeof getAiCosts>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAiCosts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAiCostsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getCreateBillingPortalUrl = () => {
 

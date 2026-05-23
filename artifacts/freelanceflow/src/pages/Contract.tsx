@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CreditCostBadge from "@/components/CreditCostBadge";
 import { Loader2, FileSignature, Copy } from "lucide-react";
 
 export default function Contract() {
@@ -30,7 +31,10 @@ export default function Contract() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Contract Generator</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Contract Generator</h1>
+          <CreditCostBadge action="contract" />
+        </div>
         <p className="text-muted-foreground">Draft a freelance contract in seconds.</p>
       </div>
 

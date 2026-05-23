@@ -42,6 +42,7 @@ import GlobalSearch from "@/components/GlobalSearch";
 import NotificationsBell from "@/components/NotificationsBell";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import CreditsPill from "@/components/CreditsPill";
+import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
 import { CreditCard } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
@@ -224,6 +225,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>
       </div>
+      <InsufficientCreditsDialog />
     </div>
   );
 }

@@ -219,6 +219,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/BillingError"
 
+  /billing/ai-costs:
+    get:
+      operationId: getAiCosts
+      tags: [billing]
+      summary: Credit cost per AI action
+      responses:
+        "200":
+          description: Cost table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiCostsResponse"
+
   /billing/portal:
     post:
       operationId: createBillingPortal
@@ -1225,7 +1238,7 @@ components:
 
     BillingPlan:
       type: object
-      required: [id, name, monthlyCredits, allowAdvanced]
+      required: [id, name, monthlyCredits, allowAdvanced, interval, priceUsd, bonusCreditsPerMonth, totalCreditsPerCycle]
       properties:
         id:
           type: string
@@ -1233,8 +1246,17 @@ components:
           type: string
         monthlyCredits:
           type: integer
+        bonusCreditsPerMonth:
+          type: integer
         allowAdvanced:
           type: boolean
+        interval:
+          type: string
+          enum: [month, year]
+        priceUsd:
+          type: number
+        totalCreditsPerCycle:
+          type: integer
 
     BillingCreditPack:
       type: object
@@ -1268,7 +1290,7 @@ components:
       properties:
         tier:
           type: string
-          enum: [pro, proplus]
+          enum: [pro, proplus, pro_annual, proplus_annual]
         successUrl:
           type: string
         cancelUrl:
@@ -1292,6 +1314,19 @@ components:
       properties:
         url:
           type: ["string", "null"]
+
+    AiCostsResponse:
+      type: object
+      required: [costs, labels]
+      properties:
+        costs:
+          type: object
+          additionalProperties:
+            type: integer
+        labels:
+          type: object
+          additionalProperties:
+            type: string
 
     BillingError:
       type: object

@@ -8,15 +8,18 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetBillingMe,
+  getGetBillingMeQueryKey,
   useGetBillingCatalog,
   useCreateSubscriptionCheckout,
   useCreateCreditsCheckout,
   useCreateBillingPortal,
 } from "@workspace/api-client-react";
 
+type SubTier = "pro" | "proplus" | "pro_annual" | "proplus_annual";
+
 export default function Billing() {
   const { toast } = useToast();
-  const me = useGetBillingMe({ query: { refetchOnWindowFocus: true } });
+  const me = useGetBillingMe({ query: { queryKey: getGetBillingMeQueryKey(), refetchOnWindowFocus: true } });
   const catalog = useGetBillingCatalog();
   const sub = useCreateSubscriptionCheckout();
   const pack = useCreateCreditsCheckout();
@@ -30,6 +33,7 @@ export default function Billing() {
       const t = setTimeout(() => me.refetch(), 2000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [me, toast]);
 
   const billing = me.data;
@@ -41,7 +45,7 @@ export default function Billing() {
     try {
       let url: string | null = null;
       if (action === "sub")
-        url = (await sub.mutateAsync({ data: { tier: id as "pro" | "proplus" } })).url;
+        url = (await sub.mutateAsync({ data: { tier: id as SubTier } })).url;
       else if (action === "pack")
         url = (await pack.mutateAsync({ data: { pack: id as "small" | "medium" | "large" } })).url;
       else url = (await portal.mutateAsync()).url;
@@ -135,37 +139,70 @@ export default function Billing() {
       </div>
 
       <section>
-        <h2 className="mb-4 text-xl font-semibold">Subscriptions</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {plans.filter((p) => p.id !== "free").map((p) => {
-            const isCurrent = billing?.plan === p.id;
-            return (
-              <Card key={p.id} className={isCurrent ? "ring-2 ring-primary" : ""} data-testid={`card-plan-${p.id}`}>
-                <CardHeader>
-                  <CardTitle>{p.name}</CardTitle>
-                  <CardDescription>{p.monthlyCredits.toLocaleString()} credits/mo</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">${p.id === "pro" ? 10 : 25}<span className="text-base font-normal text-muted-foreground">/mo</span></p>
-                </CardContent>
-                <CardFooter>
-                  {isCurrent ? (
-                    <Button variant="outline" className="w-full" disabled>Current plan</Button>
-                  ) : (
-                    <Button
-                      className="w-full"
-                      onClick={() => go("sub", p.id)}
-                      disabled={loading === `sub:${p.id}`}
-                      data-testid={`button-upgrade-${p.id}`}
-                    >
-                      {loading === `sub:${p.id}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
-                      {billing?.plan === "free" ? "Upgrade" : "Switch"} to {p.name}
-                    </Button>
-                  )}
-                </CardFooter>
-              </Card>
-            );
-          })}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Subscriptions</h2>
+          <Badge variant="secondary" className="gap-1">
+            <Sparkles className="h-3 w-3 text-amber-500" />
+            Annual = 2 months free + bonus credits
+          </Badge>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {plans
+            .filter((p) => p.id !== "free")
+            .sort((a, b) => {
+              const order: Record<string, number> = { pro: 0, pro_annual: 1, proplus: 2, proplus_annual: 3 };
+              return (order[a.id] ?? 99) - (order[b.id] ?? 99);
+            })
+            .map((p) => {
+              const isCurrent = billing?.plan === p.id;
+              const isAnnual = p.interval === "year";
+              const cycleSuffix = isAnnual ? "/yr" : "/mo";
+              const monthly = isAnnual ? Math.round((p.priceUsd / 12) * 100) / 100 : p.priceUsd;
+              return (
+                <Card key={p.id} className={isCurrent ? "ring-2 ring-primary" : ""} data-testid={`card-plan-${p.id}`}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      {p.name}
+                      {isAnnual && (
+                        <Badge className="bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400">
+                          Save
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription>
+                      {p.totalCreditsPerCycle.toLocaleString()} credits / {isAnnual ? "year" : "month"}
+                      {p.bonusCreditsPerMonth > 0 && (
+                        <span className="block text-emerald-600 dark:text-emerald-400">
+                          +{(p.bonusCreditsPerMonth * 12).toLocaleString()} bonus credits / yr
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-3xl font-bold">
+                      ${p.priceUsd}
+                      <span className="text-base font-normal text-muted-foreground">{cycleSuffix}</span>
+                    </p>
+                    {isAnnual && <p className="mt-1 text-xs text-muted-foreground">≈ ${monthly}/mo</p>}
+                  </CardContent>
+                  <CardFooter>
+                    {isCurrent ? (
+                      <Button variant="outline" className="w-full" disabled>Current plan</Button>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        onClick={() => go("sub", p.id)}
+                        disabled={loading === `sub:${p.id}`}
+                        data-testid={`button-upgrade-${p.id}`}
+                      >
+                        {loading === `sub:${p.id}` ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CreditCard className="mr-2 h-4 w-4" />}
+                        {billing?.plan === "free" ? "Upgrade" : "Switch"}
+                      </Button>
+                    )}
+                  </CardFooter>
+                </Card>
+              );
+            })}
         </div>
       </section>
 

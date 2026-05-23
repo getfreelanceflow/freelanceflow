@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import CreditCostBadge from "@/components/CreditCostBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +39,10 @@ export default function CoverLetter() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Cover Letter Generator</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold tracking-tight">Cover Letter Generator</h1>
+          <CreditCostBadge action="cover_letter" />
+        </div>
         <p className="text-muted-foreground mt-2">
           Generate personalized cover letters tailored to each job posting.
         </p>

@@ -398,11 +398,23 @@ export interface BillingMe {
   stripeConfigured: boolean;
 }
 
+export type BillingPlanInterval = typeof BillingPlanInterval[keyof typeof BillingPlanInterval];
+
+
+export const BillingPlanInterval = {
+  month: 'month',
+  year: 'year',
+} as const;
+
 export interface BillingPlan {
   id: string;
   name: string;
   monthlyCredits: number;
+  bonusCreditsPerMonth: number;
   allowAdvanced: boolean;
+  interval: BillingPlanInterval;
+  priceUsd: number;
+  totalCreditsPerCycle: number;
 }
 
 export interface BillingCreditPack {
@@ -423,6 +435,8 @@ export type SubscriptionCheckoutInputTier = typeof SubscriptionCheckoutInputTier
 export const SubscriptionCheckoutInputTier = {
   pro: 'pro',
   proplus: 'proplus',
+  pro_annual: 'pro_annual',
+  proplus_annual: 'proplus_annual',
 } as const;
 
 export interface SubscriptionCheckoutInput {
@@ -449,6 +463,15 @@ export interface CreditsCheckoutInput {
 export interface CheckoutSession {
   /** @nullable */
   url: string | null;
+}
+
+export type AiCostsResponseCosts = {[key: string]: number};
+
+export type AiCostsResponseLabels = {[key: string]: string};
+
+export interface AiCostsResponse {
+  costs: AiCostsResponseCosts;
+  labels: AiCostsResponseLabels;
 }
 
 export interface BillingError {

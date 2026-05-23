@@ -34,6 +34,9 @@ async function customFetch<T>(url: string, init?: RequestInit): Promise<T> {
     } catch {
       /* ignore */
     }
+    if (res.status === 402) {
+      window.dispatchEvent(new CustomEvent("ff:insufficient-credits", { detail }));
+    }
     const msg =
       (detail && typeof detail === "object" && "error" in detail
         ? String((detail as { error: unknown }).error)
