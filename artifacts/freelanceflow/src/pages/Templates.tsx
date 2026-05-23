@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FileStack, Plus, Trash2, Copy } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Templates() {
   const qc = useQueryClient();
@@ -106,7 +107,27 @@ export default function Templates() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-5/6" />
+                <Skeleton className="h-3 w-4/6" />
+                <div className="flex gap-2 pt-2">
+                  <Skeleton className="h-8 w-20 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : items && items.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {items.map((t) => (

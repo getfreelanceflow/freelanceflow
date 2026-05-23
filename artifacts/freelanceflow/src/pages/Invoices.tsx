@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Receipt, Plus, Trash2, X } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-slate-500/20 text-slate-400",
@@ -250,7 +251,26 @@ export default function Invoices() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-48" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <div className="flex items-center gap-3 self-end md:self-center">
+                  <Skeleton className="h-8 w-28" />
+                  <Skeleton className="h-8 w-24 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : invoices && invoices.length > 0 ? (
         <div className="grid gap-4">
           {invoices.map((inv: Invoice) => (

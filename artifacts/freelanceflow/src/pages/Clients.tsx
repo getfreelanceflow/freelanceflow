@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Plus, Mail, Building, Trash2, DollarSign } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const STATUS_COLORS: Record<string, string> = {
   lead: "bg-blue-500/20 text-blue-400",
@@ -147,7 +148,26 @@ export default function Clients() {
       </div>
 
       {isLoading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <div className="grid gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-5 w-16 rounded-full" />
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-4 w-20" />
+                  </div>
+                </div>
+                <Skeleton className="h-8 w-8 rounded-md self-end md:self-center" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       ) : clients && clients.length > 0 ? (
         <div className="grid gap-4">
           {clients.map((c: Client) => (

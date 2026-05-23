@@ -45,6 +45,36 @@ const JOB_TYPE_OPTIONS = [
 
 type JobType = (typeof JOB_TYPE_OPTIONS)[number]["value"];
 
+// Only allow http(s) URLs; reject javascript:, data:, etc.
+function safeUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.toString();
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// RFC-5321-ish strict-enough email check; reject anything that could inject
+// extra mailto parameters via ?/&/#.
+function safeEmail(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(trimmed)) return null;
+  return trimmed;
+}
+
+function safePhone(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  return trimmed || null;
+}
+
 export default function Jobs() {
   const { t } = useT();
   const [search, setSearch] = useState("");
@@ -341,40 +371,46 @@ export default function Jobs() {
                   ))}
                 </div>
               </CardContent>
-              {(job.applyUrl || job.contactEmail || job.contactPhone) && (
-                <div className="px-6 pt-3 flex flex-wrap gap-2 border-t border-border/50">
-                  {job.applyUrl ? (
-                    <a
-                      href={job.applyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      data-testid={`job-apply-link-${job.id}`}
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" /> Visit site
-                    </a>
-                  ) : null}
-                  {job.contactPhone ? (
-                    <a
-                      href={`tel:${job.contactPhone.replace(/[^+\d]/g, "")}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors"
-                      data-testid={`job-phone-link-${job.id}`}
-                    >
-                      <Phone className="h-3.5 w-3.5" /> {job.contactPhone}
-                    </a>
-                  ) : null}
-                  {job.contactEmail ? (
-                    <a
-                      href={`mailto:${job.contactEmail}?subject=${encodeURIComponent("Application: " + job.title)}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors max-w-full truncate"
-                      data-testid={`job-email-link-${job.id}`}
-                    >
-                      <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="truncate">{job.contactEmail}</span>
-                    </a>
-                  ) : null}
-                </div>
-              )}
+              {(() => {
+                const apply = safeUrl(job.applyUrl);
+                const email = safeEmail(job.contactEmail);
+                const phone = safePhone(job.contactPhone);
+                if (!apply && !email && !phone) return null;
+                return (
+                  <div className="px-6 pt-3 flex flex-wrap gap-2 border-t border-border/50">
+                    {apply ? (
+                      <a
+                        href={apply}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        data-testid={`job-apply-link-${job.id}`}
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" /> Visit site
+                      </a>
+                    ) : null}
+                    {phone ? (
+                      <a
+                        href={`tel:${phone.replace(/[^+\d]/g, "")}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors"
+                        data-testid={`job-phone-link-${job.id}`}
+                      >
+                        <Phone className="h-3.5 w-3.5" /> {phone}
+                      </a>
+                    ) : null}
+                    {email ? (
+                      <a
+                        href={`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent("Application: " + job.title)}`}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors max-w-full truncate"
+                        data-testid={`job-email-link-${job.id}`}
+                      >
+                        <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{email}</span>
+                      </a>
+                    ) : null}
+                  </div>
+                );
+              })()}
               <CardFooter className="flex justify-between border-t border-border/50 bg-muted/20 pt-4 mt-4">
                 <Button 
                   variant="outline" 
@@ -385,13 +421,16 @@ export default function Jobs() {
                   <Bookmark className="mr-2 h-4 w-4" /> {t("jobs.saveButton")}
                 </Button>
                 <div className="flex gap-2">
-                  {job.applyUrl ? (
-                    <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm">
-                        <ExternalLink className="mr-2 h-4 w-4" /> Apply
-                      </Button>
-                    </a>
-                  ) : null}
+                  {(() => {
+                    const apply = safeUrl(job.applyUrl);
+                    return apply ? (
+                      <a href={apply} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm">
+                          <ExternalLink className="mr-2 h-4 w-4" /> Apply
+                        </Button>
+                      </a>
+                    ) : null;
+                  })()}
                   <Link href={`/proposals/new?jobId=${job.id}`}>
                     <Button size="sm">
                       {t("jobs.generateProposalButton")}
