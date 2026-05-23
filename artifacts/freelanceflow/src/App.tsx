@@ -18,6 +18,7 @@ const ProposalStudio = lazy(() => import("@/pages/ProposalStudio"));
 const SavedJobs = lazy(() => import("@/pages/SavedJobs"));
 const MyJobs = lazy(() => import("@/pages/MyJobs"));
 const Pricing = lazy(() => import("@/pages/Pricing"));
+const Billing = lazy(() => import("@/pages/Billing"));
 const Clients = lazy(() => import("@/pages/Clients"));
 const Invoices = lazy(() => import("@/pages/Invoices"));
 const Earnings = lazy(() => import("@/pages/Earnings"));
@@ -155,6 +156,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/followups"><ProtectedRoute component={Followups} /></Route>
             <Route path="/templates"><ProtectedRoute component={Templates} /></Route>
             <Route path="/profile"><ProtectedRoute component={Profile} /></Route>
+            <Route path="/billing"><ProtectedRoute component={Billing} /></Route>
             <Route path="/rate-calculator"><ProtectedRoute component={RateCalculator} /></Route>
             <Route path="/cover-letter"><ProtectedRoute component={CoverLetter} /></Route>
             <Route path="/proposal-score"><ProtectedRoute component={ProposalScore} /></Route>

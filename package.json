@@ -19,5 +19,9 @@
       "qs": "^6.15.2",
       "esbuild": "^0.25.0"
     }
+  },
+  "dependencies": {
+    "stripe": "^22.1.1",
+    "stripe-replit-sync": "^1.0.0"
   }
 }

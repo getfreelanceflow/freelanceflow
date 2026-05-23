@@ -19,6 +19,7 @@ import parseResumeRouter from "./parseResume";
 import demoDataRouter from "./demoData";
 import searchRouter from "./search";
 import notificationsRouter from "./notifications";
+import billingRouter from "./billing";
 import { servicePackagesRouter } from "./servicePackages";
 import contactRouter from "./contact";
 import publicProfileRouter from "./publicProfile";
@@ -53,5 +54,6 @@ router.use(parseResumeRouter);
 router.use(demoDataRouter);
 router.use(searchRouter);
 router.use(notificationsRouter);
+router.use(billingRouter);
 
 export default router;

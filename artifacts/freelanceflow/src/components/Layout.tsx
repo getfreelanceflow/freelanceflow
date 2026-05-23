@@ -41,6 +41,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import GlobalSearch from "@/components/GlobalSearch";
 import NotificationsBell from "@/components/NotificationsBell";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import CreditsPill from "@/components/CreditsPill";
+import { CreditCard } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
 interface LayoutProps {
@@ -99,6 +101,7 @@ const navGroups: { labelKey: string; items: { href: string; labelKey: string; ic
       { href: "/skill-gap", labelKey: "nav.skillGap", icon: BookOpen },
       { href: "/templates", labelKey: "nav.templates", icon: FileStack },
       { href: "/profile", labelKey: "nav.profile", icon: User },
+      { href: "/billing", labelKey: "nav.billing", icon: CreditCard },
       { href: "/contact", labelKey: "nav.contact", icon: Mail },
     ],
   },
@@ -211,6 +214,7 @@ export default function Layout({ children }: LayoutProps) {
             <GlobalSearch />
           </div>
           <div className="flex items-center gap-2">
+            <CreditsPill />
             <LanguageSwitcher />
             <NotificationsBell />
           </div>

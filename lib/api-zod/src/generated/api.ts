@@ -138,6 +138,75 @@ export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem
 
 
 /**
+ * @summary Get current user's billing/plan/credits
+ */
+export const GetBillingMeResponse = zod.object({
+  "plan": zod.string(),
+  "planName": zod.string(),
+  "credits": zod.number(),
+  "subscriptionStatus": zod.string().nullish(),
+  "currentPeriodEnd": zod.string().nullish(),
+  "hasStripeCustomer": zod.boolean(),
+  "stripeConfigured": zod.boolean()
+})
+
+
+/**
+ * @summary Static plan + credit pack catalog
+ */
+export const GetBillingCatalogResponse = zod.object({
+  "plans": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "monthlyCredits": zod.number(),
+  "allowAdvanced": zod.boolean()
+})),
+  "creditPacks": zod.array(zod.object({
+  "id": zod.string(),
+  "credits": zod.number(),
+  "priceUsd": zod.number(),
+  "label": zod.string()
+}))
+})
+
+
+/**
+ * @summary Create Stripe Checkout session for a subscription
+ */
+export const CreateSubscriptionCheckoutBody = zod.object({
+  "tier": zod.enum(['pro', 'proplus']),
+  "successUrl": zod.string().optional(),
+  "cancelUrl": zod.string().optional()
+})
+
+export const CreateSubscriptionCheckoutResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary Create Stripe Checkout session for a credit pack
+ */
+export const CreateCreditsCheckoutBody = zod.object({
+  "pack": zod.enum(['small', 'medium', 'large']),
+  "successUrl": zod.string().optional(),
+  "cancelUrl": zod.string().optional()
+})
+
+export const CreateCreditsCheckoutResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary Create Stripe Customer Portal session
+ */
+export const CreateBillingPortalResponse = zod.object({
+  "url": zod.string().nullable()
+})
+
+
+/**
  * @summary List jobs the current user has posted
  */
 export const ListMyJobsResponseItem = zod.object({

@@ -386,6 +386,75 @@ export interface GlobalSearchResults {
   proposals: SearchHit[];
 }
 
+export interface BillingMe {
+  plan: string;
+  planName: string;
+  credits: number;
+  /** @nullable */
+  subscriptionStatus?: string | null;
+  /** @nullable */
+  currentPeriodEnd?: string | null;
+  hasStripeCustomer: boolean;
+  stripeConfigured: boolean;
+}
+
+export interface BillingPlan {
+  id: string;
+  name: string;
+  monthlyCredits: number;
+  allowAdvanced: boolean;
+}
+
+export interface BillingCreditPack {
+  id: string;
+  credits: number;
+  priceUsd: number;
+  label: string;
+}
+
+export interface BillingCatalog {
+  plans: BillingPlan[];
+  creditPacks: BillingCreditPack[];
+}
+
+export type SubscriptionCheckoutInputTier = typeof SubscriptionCheckoutInputTier[keyof typeof SubscriptionCheckoutInputTier];
+
+
+export const SubscriptionCheckoutInputTier = {
+  pro: 'pro',
+  proplus: 'proplus',
+} as const;
+
+export interface SubscriptionCheckoutInput {
+  tier: SubscriptionCheckoutInputTier;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+export type CreditsCheckoutInputPack = typeof CreditsCheckoutInputPack[keyof typeof CreditsCheckoutInputPack];
+
+
+export const CreditsCheckoutInputPack = {
+  small: 'small',
+  medium: 'medium',
+  large: 'large',
+} as const;
+
+export interface CreditsCheckoutInput {
+  pack: CreditsCheckoutInputPack;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
+export interface CheckoutSession {
+  /** @nullable */
+  url: string | null;
+}
+
+export interface BillingError {
+  error: string;
+}
+
 export type NotificationKind = typeof NotificationKind[keyof typeof NotificationKind];
 
 
@@ -439,5 +508,20 @@ export const ListJobsJobType = {
 
 export type GlobalSearchParams = {
 q: string;
+};
+
+export type CreateSubscriptionCheckout200 = {
+  /** @nullable */
+  url: string | null;
+};
+
+export type CreateCreditsCheckout200 = {
+  /** @nullable */
+  url: string | null;
+};
+
+export type CreateBillingPortal200 = {
+  /** @nullable */
+  url: string | null;
 };
 

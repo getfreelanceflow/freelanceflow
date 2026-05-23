@@ -135,6 +135,107 @@ paths:
                 items:
                   $ref: "#/components/schemas/Notification"
 
+  /billing/me:
+    get:
+      operationId: getBillingMe
+      tags: [billing]
+      summary: Get current user's billing/plan/credits
+      responses:
+        "200":
+          description: Billing state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingMe"
+
+  /billing/catalog:
+    get:
+      operationId: getBillingCatalog
+      tags: [billing]
+      summary: Static plan + credit pack catalog
+      responses:
+        "200":
+          description: Catalog
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingCatalog"
+
+  /billing/checkout-subscription:
+    post:
+      operationId: createSubscriptionCheckout
+      tags: [billing]
+      summary: Create Stripe Checkout session for a subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionCheckoutInput"
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: ["string", "null"]
+        "503":
+          description: Stripe not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingError"
+
+  /billing/checkout-credits:
+    post:
+      operationId: createCreditsCheckout
+      tags: [billing]
+      summary: Create Stripe Checkout session for a credit pack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditsCheckoutInput"
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: ["string", "null"]
+        "503":
+          description: Stripe not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingError"
+
+  /billing/portal:
+    post:
+      operationId: createBillingPortal
+      tags: [billing]
+      summary: Create Stripe Customer Portal session
+      responses:
+        "200":
+          description: Portal URL
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: ["string", "null"]
+
   /jobs/mine:
     get:
       operationId: listMyJobs
@@ -1101,6 +1202,102 @@ components:
         subtitle:
           type: ["string", "null"]
         href:
+          type: string
+
+    BillingMe:
+      type: object
+      required: [plan, planName, credits, stripeConfigured, hasStripeCustomer]
+      properties:
+        plan:
+          type: string
+        planName:
+          type: string
+        credits:
+          type: integer
+        subscriptionStatus:
+          type: ["string", "null"]
+        currentPeriodEnd:
+          type: ["string", "null"]
+        hasStripeCustomer:
+          type: boolean
+        stripeConfigured:
+          type: boolean
+
+    BillingPlan:
+      type: object
+      required: [id, name, monthlyCredits, allowAdvanced]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        monthlyCredits:
+          type: integer
+        allowAdvanced:
+          type: boolean
+
+    BillingCreditPack:
+      type: object
+      required: [id, credits, priceUsd, label]
+      properties:
+        id:
+          type: string
+        credits:
+          type: integer
+        priceUsd:
+          type: number
+        label:
+          type: string
+
+    BillingCatalog:
+      type: object
+      required: [plans, creditPacks]
+      properties:
+        plans:
+          type: array
+          items:
+            $ref: "#/components/schemas/BillingPlan"
+        creditPacks:
+          type: array
+          items:
+            $ref: "#/components/schemas/BillingCreditPack"
+
+    SubscriptionCheckoutInput:
+      type: object
+      required: [tier]
+      properties:
+        tier:
+          type: string
+          enum: [pro, proplus]
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+
+    CreditsCheckoutInput:
+      type: object
+      required: [pack]
+      properties:
+        pack:
+          type: string
+          enum: [small, medium, large]
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+
+    CheckoutSession:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: ["string", "null"]
+
+    BillingError:
+      type: object
+      required: [error]
+      properties:
+        error:
           type: string
 
     Notification:

@@ -192,8 +192,18 @@ If mySkills is empty, set fitScore to 50 and fitReason to "no skills provided to
 });
 
 router.post("/proposals/generate-draft", async (req, res) => {
+  const uid = (req as unknown as AuthedRequest).userId;
+  const { consumeCredits, refundCredits } = await import("../lib/billing");
+  const gate = await consumeCredits(uid, 1, "proposal_generate_draft");
+  if (!gate.ok) {
+    return res.status(402).json({
+      error: "insufficient_credits",
+      message: "You're out of AI credits. Upgrade your plan or buy a credit pack.",
+      have: gate.have,
+      needed: gate.needed,
+    });
+  }
   try {
-    const uid = (req as unknown as AuthedRequest).userId;
     const body = z
       .object({
         jobTitle: z.string().min(1),
@@ -272,6 +282,7 @@ Return JSON with this EXACT shape:
     const parsed = await chatJsonValidated(system, user, draftSchema, 1800);
 
     if (!parsed) {
+      await refundCredits(uid, 1, gate.txId, "proposal_generate_draft_refund");
       return res.status(502).json({ error: "AI returned an unparseable response. Please try again." });
     }
 
@@ -281,6 +292,7 @@ Return JSON with this EXACT shape:
       analysis: normalizeAnalysis(parsed.analysis ?? null),
     });
   } catch (e) {
+    await refundCredits(uid, 1, gate.txId, "proposal_generate_draft_refund").catch(() => {});
     if (handleZod(e, res)) return;
     const msg = e instanceof Error ? e.message : "Internal error";
     console.error("[proposals/generate-draft] error:", msg);
@@ -289,6 +301,17 @@ Return JSON with this EXACT shape:
 });
 
 router.post("/proposals/regenerate", async (req, res) => {
+  const uid = (req as unknown as AuthedRequest).userId;
+  const { consumeCredits, refundCredits } = await import("../lib/billing");
+  const gate = await consumeCredits(uid, 1, "proposal_regenerate");
+  if (!gate.ok) {
+    return res.status(402).json({
+      error: "insufficient_credits",
+      message: "You're out of AI credits. Upgrade your plan or buy a credit pack.",
+      have: gate.have,
+      needed: gate.needed,
+    });
+  }
   try {
     const body = z
       .object({
@@ -320,10 +343,12 @@ Return the rewritten proposal text only.`;
 
     const newContent = await chatText(system, user, 1500);
     if (!newContent || newContent.trim().length === 0) {
+      await refundCredits(uid, 1, gate.txId, "proposal_regenerate_refund");
       return res.status(502).json({ error: "AI returned an empty response. Please try again." });
     }
     res.json({ content: newContent, score: null });
   } catch (e) {
+    await refundCredits(uid, 1, gate.txId, "proposal_regenerate_refund").catch(() => {});
     if (handleZod(e, res)) return;
     const msg = e instanceof Error ? e.message : "Internal error";
     console.error("[proposals/regenerate] error:", msg);

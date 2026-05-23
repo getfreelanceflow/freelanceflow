@@ -15,3 +15,4 @@ export * from "./goals";
 export * from "./servicePackages";
 export * from "./packageInquiries";
 export * from "./packageReviews";
+export * from "./billing";
