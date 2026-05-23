@@ -71,11 +71,12 @@ export const CREDIT_PACKS = {
 
 export type CreditPackId = keyof typeof CREDIT_PACKS;
 
-const MS_30_DAYS = 30 * 24 * 60 * 60 * 1000;
+/** Free users get refreshed up to {PLANS.free.monthlyCredits} credits every 24 hours. */
+const FREE_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 export async function getOrCreateBilling(userId: string): Promise<UserBilling> {
   const [existing] = await db.select().from(userBilling).where(eq(userBilling.userId, userId));
-  if (existing) return maybeResetFreeMonthly(existing);
+  if (existing) return maybeRefreshFreeDaily(existing);
   const [row] = await db
     .insert(userBilling)
     .values({ userId, plan: "free", credits: PLANS.free.monthlyCredits })
@@ -86,10 +87,14 @@ export async function getOrCreateBilling(userId: string): Promise<UserBilling> {
   return refetched;
 }
 
-async function maybeResetFreeMonthly(b: UserBilling): Promise<UserBilling> {
+/**
+ * Top free users up to PLANS.free.monthlyCredits (5) once per 24h.
+ * Uses GREATEST so users who bought credit packs are never punished.
+ */
+async function maybeRefreshFreeDaily(b: UserBilling): Promise<UserBilling> {
   if (b.plan !== "free") return b;
   const last = b.freeCreditsResetAt?.getTime() ?? 0;
-  if (Date.now() - last < MS_30_DAYS) return b;
+  if (Date.now() - last < FREE_REFRESH_INTERVAL_MS) return b;
   const [updated] = await db
     .update(userBilling)
     .set({

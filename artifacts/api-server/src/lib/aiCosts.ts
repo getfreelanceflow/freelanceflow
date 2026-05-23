@@ -11,7 +11,7 @@ export const AI_COSTS = {
   proposal_analyze_job: 1,
   proposal_generate_draft: 1,
   proposal_regenerate: 1,
-  proposal_create: 1,
+  proposal_create: 2,
   resume_match: 2,
   contract: 2,
   negotiate: 2,
