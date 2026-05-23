@@ -1,11 +1,59 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
-import { servicePackages, packageInquiries, INQUIRY_STATUSES } from "@workspace/db/schema";
-import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { servicePackages, packageInquiries, packageReviews, INQUIRY_STATUSES, REVIEW_STATUSES } from "@workspace/db/schema";
+import { eq, and, desc, sql, inArray, avg, count } from "drizzle-orm";
 import { createClerkClient } from "@clerk/express";
 import { requireUser, type AuthedRequest } from "../lib/requireUser";
 import { sendEmail, escapeHtml } from "../lib/email";
+import { openai } from "@workspace/integrations-openai-ai-server";
+
+// Fire-and-forget AI triage of a new package inquiry. Updates the
+// aiLabel/aiScore/aiReason columns on success; failures are swallowed so the
+// inquiry insert path stays fast and reliable.
+async function triageInquiry(inquiryId: number, payload: {
+  packageTitle: string;
+  name?: string | null;
+  email?: string | null;
+  message?: string | null;
+  tier?: string | null;
+}): Promise<void> {
+  if (!process.env.OPENAI_API_KEY) return;
+  if (!payload.message && !payload.name) return;
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      max_completion_tokens: 200,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "Classify freelance package inquiries. Return strict JSON: {label: 'qualified'|'exploratory'|'spam', score: 0-100, reason: <=120 chars}. 'qualified' = real budget/scope/timeline signals. 'exploratory' = curious, vague. 'spam' = promotional / nonsense / obvious bot.",
+        },
+        {
+          role: "user",
+          content: `Package: ${payload.packageTitle}${payload.tier ? ` (${payload.tier})` : ""}
+From: ${payload.name ?? "(no name)"} <${payload.email ?? "no email"}>
+Message: ${payload.message ?? "(no message — visitor clicked CTA only)"}`,
+        },
+      ],
+    });
+    const raw = completion.choices[0]?.message?.content ?? "";
+    const parsed = JSON.parse(raw) as { label?: string; score?: number; reason?: string };
+    const label = ["qualified", "exploratory", "spam"].includes(String(parsed.label))
+      ? String(parsed.label)
+      : "exploratory";
+    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const reason = String(parsed.reason ?? "").slice(0, 240);
+    await db
+      .update(packageInquiries)
+      .set({ aiLabel: label, aiScore: score, aiReason: reason })
+      .where(eq(packageInquiries.id, inquiryId));
+  } catch (e) {
+    console.error("[triageInquiry] failed", e);
+  }
+}
 
 const clerkSecret = process.env.CLERK_SECRET_KEY;
 const clerk = clerkSecret ? createClerkClient({ secretKey: clerkSecret }) : null;
@@ -214,19 +262,35 @@ router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5
       (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
       req.socket.remoteAddress ||
       null;
+    let insertedInquiryId: number | null = null;
     try {
-      await db.insert(packageInquiries).values({
-        packageId: pkg.id,
-        userId: pkg.userId,
-        name: parsed.name ?? null,
-        email: parsed.email ?? null,
-        message: parsed.message ?? null,
-        tier: parsed.tier ?? null,
-        status: "new",
-        ip: reqIp,
-      });
+      const [row] = await db
+        .insert(packageInquiries)
+        .values({
+          packageId: pkg.id,
+          userId: pkg.userId,
+          name: parsed.name ?? null,
+          email: parsed.email ?? null,
+          message: parsed.message ?? null,
+          tier: parsed.tier ?? null,
+          status: "new",
+          ip: reqIp,
+        })
+        .returning({ id: packageInquiries.id });
+      insertedInquiryId = row?.id ?? null;
     } catch {
       // Don't block the visitor flow on a logging failure.
+    }
+
+    if (insertedInquiryId != null) {
+      // Fire-and-forget — never block the visitor on AI latency.
+      triageInquiry(insertedInquiryId, {
+        packageTitle: pkg.title,
+        name: parsed.name,
+        email: parsed.email,
+        message: parsed.message,
+        tier: parsed.tier,
+      });
     }
 
     let delivered = false;
@@ -429,6 +493,9 @@ router.get("/inquiries", requireUser, async (req, res) => {
         tier: packageInquiries.tier,
         status: packageInquiries.status,
         createdAt: packageInquiries.createdAt,
+        aiLabel: packageInquiries.aiLabel,
+        aiScore: packageInquiries.aiScore,
+        aiReason: packageInquiries.aiReason,
         packageTitle: servicePackages.title,
         packageSlug: servicePackages.slug,
       })
@@ -493,6 +560,177 @@ router.delete("/inquiries/:id", requireUser, async (req, res) => {
     res.status(204).end();
   } catch (e) {
     return internalError(res, e, "DELETE /inquiries/:id");
+  }
+});
+
+// ---------- Reviews ----------
+
+const reviewSubmitSchema = z.object({
+  authorName: z.string().min(1).max(120),
+  authorEmail: z.string().email().optional(),
+  authorRole: z.string().max(120).optional(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().min(5).max(2000),
+});
+
+// Public: submit a review on a package (defaults to 'pending').
+router.post(
+  "/packages/public/:slug/reviews",
+  rateLimit("pkg_review", 60_000, 3),
+  async (req, res) => {
+    try {
+      const slug = String(req.params.slug);
+      const body = reviewSubmitSchema.parse(req.body ?? {});
+      const [pkg] = await db
+        .select({ id: servicePackages.id, userId: servicePackages.userId })
+        .from(servicePackages)
+        .where(and(eq(servicePackages.slug, slug), eq(servicePackages.isPublic, true)))
+        .limit(1);
+      if (!pkg) return res.status(404).json({ error: "Not found" });
+      const [row] = await db
+        .insert(packageReviews)
+        .values({
+          packageId: pkg.id,
+          userId: pkg.userId,
+          authorName: body.authorName.trim(),
+          authorEmail: body.authorEmail ?? null,
+          authorRole: body.authorRole?.trim() || null,
+          rating: body.rating,
+          comment: body.comment.trim(),
+          status: "pending",
+        })
+        .returning({ id: packageReviews.id });
+      res.json({ ok: true, id: row?.id });
+    } catch (e) {
+      if (e instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid input", issues: e.issues });
+      }
+      console.error("[reviews] POST public", e);
+      res.status(500).json({ error: "Internal error" });
+    }
+  },
+);
+
+// Public: list published reviews for a package.
+router.get("/packages/public/:slug/reviews", async (req, res) => {
+  try {
+    const slug = String(req.params.slug);
+    const [pkg] = await db
+      .select({ id: servicePackages.id })
+      .from(servicePackages)
+      .where(and(eq(servicePackages.slug, slug), eq(servicePackages.isPublic, true)))
+      .limit(1);
+    if (!pkg) return res.status(404).json({ error: "Not found" });
+    const rows = await db
+      .select({
+        id: packageReviews.id,
+        authorName: packageReviews.authorName,
+        authorRole: packageReviews.authorRole,
+        rating: packageReviews.rating,
+        comment: packageReviews.comment,
+        createdAt: packageReviews.createdAt,
+      })
+      .from(packageReviews)
+      .where(and(eq(packageReviews.packageId, pkg.id), eq(packageReviews.status, "published")))
+      .orderBy(desc(packageReviews.createdAt))
+      .limit(100);
+    const [agg] = await db
+      .select({
+        avg: avg(packageReviews.rating),
+        count: count(packageReviews.id),
+      })
+      .from(packageReviews)
+      .where(and(eq(packageReviews.packageId, pkg.id), eq(packageReviews.status, "published")));
+    res.json({
+      reviews: rows,
+      average: agg?.avg ? Number(agg.avg) : null,
+      count: Number(agg?.count ?? 0),
+    });
+  } catch (e) {
+    console.error("[reviews] GET public", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
+// Authed: list all reviews for owner (any status, with package title).
+router.get("/reviews", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const statusParam = String(req.query.status ?? "").trim();
+    const conditions = [eq(packageReviews.userId, uid)];
+    if (statusParam) {
+      const allowed = new Set<string>(REVIEW_STATUSES);
+      const arr = statusParam.split(",").map((s) => s.trim()).filter(Boolean);
+      const invalid = arr.filter((s) => !allowed.has(s));
+      if (invalid.length > 0) {
+        return res.status(400).json({ error: "Invalid status filter", invalid, allowed: REVIEW_STATUSES });
+      }
+      conditions.push(
+        inArray(packageReviews.status, arr as unknown as (typeof REVIEW_STATUSES)[number][]),
+      );
+    }
+    const rows = await db
+      .select({
+        id: packageReviews.id,
+        packageId: packageReviews.packageId,
+        authorName: packageReviews.authorName,
+        authorEmail: packageReviews.authorEmail,
+        authorRole: packageReviews.authorRole,
+        rating: packageReviews.rating,
+        comment: packageReviews.comment,
+        status: packageReviews.status,
+        createdAt: packageReviews.createdAt,
+        packageTitle: servicePackages.title,
+        packageSlug: servicePackages.slug,
+      })
+      .from(packageReviews)
+      .leftJoin(servicePackages, eq(packageReviews.packageId, servicePackages.id))
+      .where(and(...conditions))
+      .orderBy(desc(packageReviews.createdAt))
+      .limit(500);
+    res.json(rows);
+  } catch (e) {
+    console.error("[reviews] GET /reviews", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
+router.patch("/reviews/:id", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const { status } = z.object({ status: z.enum(REVIEW_STATUSES) }).parse(req.body ?? {});
+    const [row] = await db
+      .update(packageReviews)
+      .set({ status })
+      .where(and(eq(packageReviews.id, id), eq(packageReviews.userId, uid)))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(row);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid input", issues: e.issues });
+    }
+    console.error("[reviews] PATCH", e);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
+router.delete("/reviews/:id", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const result = await db
+      .delete(packageReviews)
+      .where(and(eq(packageReviews.id, id), eq(packageReviews.userId, uid)))
+      .returning({ id: packageReviews.id });
+    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    res.status(204).end();
+  } catch (e) {
+    console.error("[reviews] DELETE", e);
+    res.status(500).json({ error: "Internal error" });
   }
 });
 

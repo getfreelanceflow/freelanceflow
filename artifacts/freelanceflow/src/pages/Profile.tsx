@@ -13,12 +13,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Plus, X, Save } from "lucide-react";
+import { Sparkles, Plus, X, Save, Link as LinkIcon, Copy, ExternalLink } from "lucide-react";
 
 export default function Profile() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { data, isLoading } = useQuery({ queryKey: ["profile"], queryFn: api.getProfile });
+  const profile = data;
 
   const [displayName, setDisplayName] = useState("");
   const [headline, setHeadline] = useState("");
@@ -105,6 +106,42 @@ export default function Profile() {
           {save.isPending ? "Saving..." : "Save Profile"}
         </Button>
       </div>
+
+      {profile?.publicSlug && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2 font-medium">
+              <LinkIcon className="h-4 w-4 text-primary" />
+              Your public profile page
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Share this single link to showcase your bio and all your public service packages.
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <code className="text-sm bg-background border rounded px-3 py-1.5 flex-1 min-w-0 truncate">
+                {window.location.origin}/u/{profile.publicSlug}
+              </code>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/u/${profile.publicSlug}`);
+                  toast({ title: "Copied to clipboard" });
+                }}
+              >
+                <Copy className="h-4 w-4 mr-1.5" /> Copy
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(`/u/${profile.publicSlug}`, "_blank")}
+              >
+                <ExternalLink className="h-4 w-4 mr-1.5" /> View
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

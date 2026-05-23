@@ -19,6 +19,10 @@ export type SocialLinks = {
 export const profile = pgTable("profile", {
   id: serial("id").primaryKey(),
   userId: text("user_id").unique(),
+  // Public slug for `/u/:publicSlug` page. Auto-generated from displayName
+  // when the profile is saved; nullable until the user fills in a name.
+  publicSlug: text("public_slug").unique(),
+  publicEnabled: integer("public_enabled").notNull().default(1),
   displayName: text("display_name").notNull().default(""),
   headline: text("headline").notNull().default(""),
   bio: text("bio").notNull().default(""),

@@ -97,6 +97,8 @@ export type SocialLinks = { website?: string; linkedin?: string; github?: string
 
 export type Profile = {
   id: number;
+  publicSlug: string | null;
+  publicEnabled: boolean;
   displayName: string;
   headline: string;
   bio: string;
@@ -354,6 +356,36 @@ export const api = {
   deleteInquiry: (id: number) =>
     customFetch<null>(`${base}/inquiries/${id}`, { method: "DELETE" }),
 
+  // Reviews
+  listReviews: (status?: string) =>
+    customFetch<PackageReview[]>(
+      `${base}/reviews${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+    ),
+  updateReviewStatus: (id: number, status: ReviewStatus) =>
+    customFetch<PackageReview>(`${base}/reviews/${id}`, j({ status }, "PATCH")),
+  deleteReview: (id: number) =>
+    customFetch<null>(`${base}/reviews/${id}`, { method: "DELETE" }),
+  getPublicReviews: (slug: string) =>
+    customFetch<PublicReviewsResponse>(`${base}/packages/public/${slug}/reviews`),
+  submitPublicReview: (
+    slug: string,
+    body: {
+      authorName: string;
+      authorEmail?: string;
+      authorRole?: string;
+      rating: number;
+      comment: string;
+    },
+  ) =>
+    customFetch<{ ok: boolean; id?: number }>(
+      `${base}/packages/public/${slug}/reviews`,
+      j(body),
+    ),
+
+  // Public freelancer profile
+  getPublicProfile: (slug: string) =>
+    customFetch<PublicProfile>(`${base}/profiles/public/${slug}`),
+
   // Contact (site-wide)
   sendContactMessage: (b: {
     name: string;
@@ -420,9 +452,66 @@ export type PackageInquiry = {
   createdAt: string;
   packageTitle: string | null;
   packageSlug: string | null;
+  aiLabel: string | null;
+  aiScore: number | null;
+  aiReason: string | null;
 };
 
 export type InquiryStats = Record<InquiryStatus, number>;
+
+export type ReviewStatus = "pending" | "published" | "rejected";
+
+export type PackageReview = {
+  id: number;
+  packageId: number;
+  authorName: string;
+  authorEmail: string | null;
+  authorRole: string | null;
+  rating: number;
+  comment: string;
+  status: ReviewStatus;
+  createdAt: string;
+  packageTitle: string | null;
+  packageSlug: string | null;
+};
+
+export type PublicReview = {
+  id: number;
+  authorName: string;
+  authorRole: string | null;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
+export type PublicReviewsResponse = {
+  reviews: PublicReview[];
+  average: number | null;
+  count: number;
+};
+
+export type PublicProfile = {
+  profile: {
+    publicSlug: string | null;
+    displayName: string;
+    headline: string;
+    bio: string;
+    skills: string[];
+    location: string | null;
+    portfolioItems: Array<{ title: string; description: string; url?: string; imageUrl?: string }>;
+    socialLinks: { website?: string; linkedin?: string; github?: string; twitter?: string };
+  };
+  packages: Array<{
+    slug: string;
+    title: string;
+    tagline: string | null;
+    price: number;
+    currency: string;
+    deliveryDays: number;
+    category: string | null;
+    tiers: PackageTier[];
+  }>;
+};
 
 export type TimeEntry = {
   id: number;

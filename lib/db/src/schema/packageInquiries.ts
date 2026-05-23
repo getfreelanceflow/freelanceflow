@@ -20,8 +20,16 @@ export const packageInquiries = pgTable(
     // DB CHECK constraint is added below to prevent stale/invalid writes.
     status: text("status").notNull().default("new"),
     ip: text("ip"),
+    // AI triage (populated asynchronously after insert):
+    //   aiLabel: 'qualified' | 'exploratory' | 'spam'
+    //   aiScore: 0-100 confidence that this is a serious lead
+    //   aiReason: short human-readable explanation
+    aiLabel: text("ai_label"),
+    aiScore: integer("ai_score"),
+    aiReason: text("ai_reason"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
+  // CHECK constraints are appended in the table-config callback below.
   (t) => ({
     userIdx: index("pkg_inq_user_idx").on(t.userId, t.createdAt),
     packageIdx: index("pkg_inq_package_idx").on(t.packageId),
@@ -35,6 +43,14 @@ export const packageInquiries = pgTable(
     statusCheck: check(
       "pkg_inq_status_check",
       sql`${t.status} IN ('new','read','starred','archived','spam')`,
+    ),
+    aiLabelCheck: check(
+      "pkg_inq_ai_label_check",
+      sql`${t.aiLabel} IS NULL OR ${t.aiLabel} IN ('qualified','exploratory','spam')`,
+    ),
+    aiScoreCheck: check(
+      "pkg_inq_ai_score_check",
+      sql`${t.aiScore} IS NULL OR (${t.aiScore} BETWEEN 0 AND 100)`,
     ),
   }),
 );

@@ -282,6 +282,31 @@ export default function Leads() {
                   </div>
                 </div>
 
+                {selected.aiLabel && (
+                  <div
+                    className={cn(
+                      "rounded-md border p-3 text-sm space-y-1",
+                      selected.aiLabel === "qualified" && "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900",
+                      selected.aiLabel === "spam" && "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900",
+                      selected.aiLabel === "exploratory" && "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900",
+                    )}
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      <Sparkles className="h-4 w-4" />
+                      AI triage:{" "}
+                      <span className="capitalize">{selected.aiLabel}</span>
+                      {typeof selected.aiScore === "number" && (
+                        <Badge variant="outline" className="ml-auto">
+                          {selected.aiScore}/100
+                        </Badge>
+                      )}
+                    </div>
+                    {selected.aiReason && (
+                      <p className="text-xs text-muted-foreground">{selected.aiReason}</p>
+                    )}
+                  </div>
+                )}
+
                 {selected.message ? (
                   <div className="rounded-md bg-muted/40 p-4">
                     <p className="text-sm whitespace-pre-wrap">{selected.message}</p>

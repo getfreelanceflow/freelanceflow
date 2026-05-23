@@ -30,7 +30,9 @@ import Expenses from "@/pages/Expenses";
 import Goals from "@/pages/Goals";
 import Packages from "@/pages/Packages";
 import Leads from "@/pages/Leads";
+import Reviews from "@/pages/Reviews";
 import PublicPackage from "@/pages/PublicPackage";
+import PublicProfile from "@/pages/PublicProfile";
 import Contract from "@/pages/Contract";
 import Negotiate from "@/pages/Negotiate";
 import SkillGap from "@/pages/SkillGap";
@@ -103,6 +105,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/pricing" component={Pricing} />
             <Route path="/contact" component={Contact} />
             <Route path="/p/:slug" component={PublicPackage} />
+            <Route path="/u/:slug" component={PublicProfile} />
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
 
@@ -128,6 +131,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/goals"><ProtectedRoute component={Goals} /></Route>
             <Route path="/packages"><ProtectedRoute component={Packages} /></Route>
             <Route path="/leads"><ProtectedRoute component={Leads} /></Route>
+            <Route path="/reviews"><ProtectedRoute component={Reviews} /></Route>
             <Route path="/contract"><ProtectedRoute component={Contract} /></Route>
             <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
             <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>

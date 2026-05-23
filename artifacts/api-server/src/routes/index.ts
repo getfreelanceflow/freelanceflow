@@ -20,6 +20,7 @@ import searchRouter from "./search";
 import notificationsRouter from "./notifications";
 import { servicePackagesRouter } from "./servicePackages";
 import contactRouter from "./contact";
+import publicProfileRouter from "./publicProfile";
 
 const router: IRouter = Router();
 
@@ -28,6 +29,7 @@ router.use(healthRouter);
 // other routers' top-level requireUser middleware can intercept them.
 router.use(servicePackagesRouter);
 router.use(contactRouter);
+router.use(publicProfileRouter);
 router.use(jobsRouter);
 router.use(proposalsRouter);
 router.use(savedJobsRouter);

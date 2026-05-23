@@ -16,9 +16,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Check, Clock, RefreshCw, Sparkles, Mail } from "lucide-react";
+import { Check, Clock, RefreshCw, Sparkles, Mail, Star } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import PackageReviews from "@/components/PackageReviews";
 
 export default function PublicPackage() {
   const [, params] = useRoute("/p/:slug");
@@ -364,6 +365,8 @@ export default function PublicPackage() {
             </CardContent>
           </Card>
         )}
+
+        <PackageReviews slug={slug} />
 
         <p className="text-center text-xs text-muted-foreground">
           Powered by FreelanceFlow AI
