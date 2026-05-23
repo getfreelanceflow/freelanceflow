@@ -36,6 +36,7 @@ export const AI_ACTION_LABELS: Record<AiAction, string> = {
   proposal_analyze_job: "Job analysis",
   proposal_generate_draft: "Proposal draft",
   proposal_regenerate: "Proposal rewrite",
+  proposal_create: "Save new proposal",
   resume_match: "Resume match",
   contract: "Contract draft",
   negotiate: "Negotiation script",
