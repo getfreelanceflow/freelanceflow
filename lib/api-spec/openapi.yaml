@@ -175,6 +175,139 @@ paths:
               schema:
                 $ref: "#/components/schemas/Proposal"
 
+  /proposals/analyze-job:
+    post:
+      operationId: analyzeJob
+      tags: [proposals]
+      summary: AI analysis of a job posting
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeJobInput"
+      responses:
+        "200":
+          description: Analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalAnalysis"
+
+  /proposals/generate-draft:
+    post:
+      operationId: generateProposalDraft
+      tags: [proposals]
+      summary: Generate proposal draft (does not save)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDraftInput"
+      responses:
+        "200":
+          description: Generated draft + score + analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GenerateDraftResponse"
+
+  /proposals/regenerate:
+    post:
+      operationId: regenerateProposal
+      tags: [proposals]
+      summary: Transform existing proposal content
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegenerateInput"
+      responses:
+        "200":
+          description: Regenerated content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegenerateResponse"
+
+  /proposal-templates:
+    get:
+      operationId: listProposalTemplates
+      tags: [proposals]
+      summary: List proposal templates
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProposalTemplate"
+    post:
+      operationId: createProposalTemplate
+      tags: [proposals]
+      summary: Create a proposal template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalTemplateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalTemplate"
+
+  /proposal-templates/{id}:
+    patch:
+      operationId: updateProposalTemplate
+      tags: [proposals]
+      summary: Update a template (partial)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProposalTemplateUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProposalTemplate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteProposalTemplate
+      tags: [proposals]
+      summary: Delete a template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /proposals/{id}:
     get:
       operationId: getProposal
@@ -517,6 +650,20 @@ components:
           enum: [draft, sent, accepted, rejected]
         successProbability:
           type: ["number", "null"]
+        tone:
+          type: ["string", "null"]
+        length:
+          type: ["string", "null"]
+        clientName:
+          type: ["string", "null"]
+        keywords:
+          type: array
+          items:
+            type: string
+        aiAnalysis:
+          oneOf:
+            - $ref: "#/components/schemas/ProposalAnalysis"
+            - type: "null"
         createdAt:
           type: string
         updatedAt:
@@ -538,6 +685,178 @@ components:
           type: string
         tone:
           type: string
+        length:
+          type: string
+          enum: [short, medium, long]
+        content:
+          type: string
+          description: If provided, save this exact content instead of regenerating
+        clientName:
+          type: ["string", "null"]
+        keywords:
+          type: array
+          items:
+            type: string
+        aiAnalysis:
+          $ref: "#/components/schemas/ProposalAnalysis"
+
+    ProposalAnalysis:
+      type: object
+      required: [scamRisk, scamReasons, budget, urgency, keywords, fitScore, fitReason]
+      properties:
+        clientName:
+          type: ["string", "null"]
+        scamRisk:
+          type: string
+          enum: [none, low, medium, high]
+        scamReasons:
+          type: array
+          items:
+            type: string
+        budget:
+          type: object
+          required: [level]
+          properties:
+            level:
+              type: string
+              enum: [low, medium, high, unknown]
+            estimate:
+              type: ["string", "null"]
+        urgency:
+          type: string
+          enum: [low, medium, high]
+        keywords:
+          type: array
+          items:
+            type: string
+        fitScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+        fitReason:
+          type: string
+
+    AnalyzeJobInput:
+      type: object
+      required: [jobDescription]
+      properties:
+        jobTitle:
+          type: string
+        jobDescription:
+          type: string
+        mySkills:
+          type: string
+
+    GenerateDraftInput:
+      type: object
+      required: [jobTitle, jobDescription, mySkills]
+      properties:
+        jobTitle:
+          type: string
+        jobDescription:
+          type: string
+        mySkills:
+          type: string
+        budget:
+          type: string
+        tone:
+          type: string
+          enum: [professional, casual, enthusiastic, direct, premium, friendly]
+        length:
+          type: string
+          enum: [short, medium, long]
+        templateId:
+          type: integer
+
+    GenerateDraftResponse:
+      type: object
+      required: [content, score]
+      properties:
+        content:
+          type: string
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        analysis:
+          oneOf:
+            - $ref: "#/components/schemas/ProposalAnalysis"
+            - type: "null"
+
+    RegenerateInput:
+      type: object
+      required: [content, transform]
+      properties:
+        content:
+          type: string
+        transform:
+          type: string
+          enum: [more_persuasive, shorter, longer, more_professional, more_friendly, premium_tone, higher_conversion, simpler, more_confident]
+        jobDescription:
+          type: string
+        tone:
+          type: string
+
+    RegenerateResponse:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        score:
+          type: ["integer", "null"]
+
+    ProposalTemplate:
+      type: object
+      required: [id, name, content, isFavorite, useCount, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        content:
+          type: string
+        niche:
+          type: ["string", "null"]
+        tone:
+          type: ["string", "null"]
+        isFavorite:
+          type: integer
+        useCount:
+          type: integer
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    ProposalTemplateInput:
+      type: object
+      required: [name, content]
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+        niche:
+          type: string
+        tone:
+          type: string
+        isFavorite:
+          type: integer
+
+    ProposalTemplateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        content:
+          type: string
+        niche:
+          type: string
+        tone:
+          type: string
+        isFavorite:
+          type: integer
 
     SavedJob:
       type: object

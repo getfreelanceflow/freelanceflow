@@ -20,8 +20,11 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AnalyzeJobInput,
   DashboardSummary,
   ErrorResponse,
+  GenerateDraftInput,
+  GenerateDraftResponse,
   GlobalSearchParams,
   GlobalSearchResults,
   HealthStatus,
@@ -35,7 +38,13 @@ import type {
   OpenaiMessage,
   OpenaiMessageInput,
   Proposal,
+  ProposalAnalysis,
   ProposalInput,
+  ProposalTemplate,
+  ProposalTemplateInput,
+  ProposalTemplateUpdate,
+  RegenerateInput,
+  RegenerateResponse,
   SavedJob,
   SavedJobInput
 } from './api.schemas';
@@ -598,6 +607,509 @@ export const useCreateProposal = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateProposalMutationOptions(options));
+    }
+
+export const getAnalyzeJobUrl = () => {
+
+
+
+
+  return `/api/proposals/analyze-job`
+}
+
+/**
+ * @summary AI analysis of a job posting
+ */
+export const analyzeJob = async (analyzeJobInput: AnalyzeJobInput, options?: RequestInit): Promise<ProposalAnalysis> => {
+
+  return customFetch<ProposalAnalysis>(getAnalyzeJobUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      analyzeJobInput,)
+  }
+);}
+
+
+
+
+export const getAnalyzeJobMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeJob>>, TError,{data: BodyType<AnalyzeJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeJob>>, TError,{data: BodyType<AnalyzeJobInput>}, TContext> => {
+
+const mutationKey = ['analyzeJob'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeJob>>, {data: BodyType<AnalyzeJobInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeJob(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeJobMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeJob>>>
+    export type AnalyzeJobMutationBody = BodyType<AnalyzeJobInput>
+    export type AnalyzeJobMutationError = ErrorType<unknown>
+
+    /**
+ * @summary AI analysis of a job posting
+ */
+export const useAnalyzeJob = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeJob>>, TError,{data: BodyType<AnalyzeJobInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeJob>>,
+        TError,
+        {data: BodyType<AnalyzeJobInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeJobMutationOptions(options));
+    }
+
+export const getGenerateProposalDraftUrl = () => {
+
+
+
+
+  return `/api/proposals/generate-draft`
+}
+
+/**
+ * @summary Generate proposal draft (does not save)
+ */
+export const generateProposalDraft = async (generateDraftInput: GenerateDraftInput, options?: RequestInit): Promise<GenerateDraftResponse> => {
+
+  return customFetch<GenerateDraftResponse>(getGenerateProposalDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      generateDraftInput,)
+  }
+);}
+
+
+
+
+export const getGenerateProposalDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateProposalDraft>>, TError,{data: BodyType<GenerateDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateProposalDraft>>, TError,{data: BodyType<GenerateDraftInput>}, TContext> => {
+
+const mutationKey = ['generateProposalDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateProposalDraft>>, {data: BodyType<GenerateDraftInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  generateProposalDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateProposalDraftMutationResult = NonNullable<Awaited<ReturnType<typeof generateProposalDraft>>>
+    export type GenerateProposalDraftMutationBody = BodyType<GenerateDraftInput>
+    export type GenerateProposalDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate proposal draft (does not save)
+ */
+export const useGenerateProposalDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateProposalDraft>>, TError,{data: BodyType<GenerateDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateProposalDraft>>,
+        TError,
+        {data: BodyType<GenerateDraftInput>},
+        TContext
+      > => {
+      return useMutation(getGenerateProposalDraftMutationOptions(options));
+    }
+
+export const getRegenerateProposalUrl = () => {
+
+
+
+
+  return `/api/proposals/regenerate`
+}
+
+/**
+ * @summary Transform existing proposal content
+ */
+export const regenerateProposal = async (regenerateInput: RegenerateInput, options?: RequestInit): Promise<RegenerateResponse> => {
+
+  return customFetch<RegenerateResponse>(getRegenerateProposalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      regenerateInput,)
+  }
+);}
+
+
+
+
+export const getRegenerateProposalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateProposal>>, TError,{data: BodyType<RegenerateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof regenerateProposal>>, TError,{data: BodyType<RegenerateInput>}, TContext> => {
+
+const mutationKey = ['regenerateProposal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof regenerateProposal>>, {data: BodyType<RegenerateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  regenerateProposal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegenerateProposalMutationResult = NonNullable<Awaited<ReturnType<typeof regenerateProposal>>>
+    export type RegenerateProposalMutationBody = BodyType<RegenerateInput>
+    export type RegenerateProposalMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Transform existing proposal content
+ */
+export const useRegenerateProposal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateProposal>>, TError,{data: BodyType<RegenerateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof regenerateProposal>>,
+        TError,
+        {data: BodyType<RegenerateInput>},
+        TContext
+      > => {
+      return useMutation(getRegenerateProposalMutationOptions(options));
+    }
+
+export const getListProposalTemplatesUrl = () => {
+
+
+
+
+  return `/api/proposal-templates`
+}
+
+/**
+ * @summary List proposal templates
+ */
+export const listProposalTemplates = async ( options?: RequestInit): Promise<ProposalTemplate[]> => {
+
+  return customFetch<ProposalTemplate[]>(getListProposalTemplatesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProposalTemplatesQueryKey = () => {
+    return [
+    `/api/proposal-templates`
+    ] as const;
+    }
+
+
+export const getListProposalTemplatesQueryOptions = <TData = Awaited<ReturnType<typeof listProposalTemplates>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProposalTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProposalTemplatesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProposalTemplates>>> = ({ signal }) => listProposalTemplates({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProposalTemplates>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProposalTemplatesQueryResult = NonNullable<Awaited<ReturnType<typeof listProposalTemplates>>>
+export type ListProposalTemplatesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List proposal templates
+ */
+
+export function useListProposalTemplates<TData = Awaited<ReturnType<typeof listProposalTemplates>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProposalTemplates>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProposalTemplatesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateProposalTemplateUrl = () => {
+
+
+
+
+  return `/api/proposal-templates`
+}
+
+/**
+ * @summary Create a proposal template
+ */
+export const createProposalTemplate = async (proposalTemplateInput: ProposalTemplateInput, options?: RequestInit): Promise<ProposalTemplate> => {
+
+  return customFetch<ProposalTemplate>(getCreateProposalTemplateUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      proposalTemplateInput,)
+  }
+);}
+
+
+
+
+export const getCreateProposalTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProposalTemplate>>, TError,{data: BodyType<ProposalTemplateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProposalTemplate>>, TError,{data: BodyType<ProposalTemplateInput>}, TContext> => {
+
+const mutationKey = ['createProposalTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProposalTemplate>>, {data: BodyType<ProposalTemplateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProposalTemplate(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProposalTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof createProposalTemplate>>>
+    export type CreateProposalTemplateMutationBody = BodyType<ProposalTemplateInput>
+    export type CreateProposalTemplateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a proposal template
+ */
+export const useCreateProposalTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProposalTemplate>>, TError,{data: BodyType<ProposalTemplateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProposalTemplate>>,
+        TError,
+        {data: BodyType<ProposalTemplateInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProposalTemplateMutationOptions(options));
+    }
+
+export const getUpdateProposalTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/proposal-templates/${id}`
+}
+
+/**
+ * @summary Update a template (partial)
+ */
+export const updateProposalTemplate = async (id: number,
+    proposalTemplateUpdate: ProposalTemplateUpdate, options?: RequestInit): Promise<ProposalTemplate> => {
+
+  return customFetch<ProposalTemplate>(getUpdateProposalTemplateUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      proposalTemplateUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateProposalTemplateMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProposalTemplate>>, TError,{id: number;data: BodyType<ProposalTemplateUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProposalTemplate>>, TError,{id: number;data: BodyType<ProposalTemplateUpdate>}, TContext> => {
+
+const mutationKey = ['updateProposalTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProposalTemplate>>, {id: number;data: BodyType<ProposalTemplateUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateProposalTemplate(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProposalTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof updateProposalTemplate>>>
+    export type UpdateProposalTemplateMutationBody = BodyType<ProposalTemplateUpdate>
+    export type UpdateProposalTemplateMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a template (partial)
+ */
+export const useUpdateProposalTemplate = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProposalTemplate>>, TError,{id: number;data: BodyType<ProposalTemplateUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProposalTemplate>>,
+        TError,
+        {id: number;data: BodyType<ProposalTemplateUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateProposalTemplateMutationOptions(options));
+    }
+
+export const getDeleteProposalTemplateUrl = (id: number,) => {
+
+
+
+
+  return `/api/proposal-templates/${id}`
+}
+
+/**
+ * @summary Delete a template
+ */
+export const deleteProposalTemplate = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteProposalTemplateUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteProposalTemplateMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProposalTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProposalTemplate>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteProposalTemplate'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProposalTemplate>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteProposalTemplate(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProposalTemplateMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProposalTemplate>>>
+
+    export type DeleteProposalTemplateMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a template
+ */
+export const useDeleteProposalTemplate = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProposalTemplate>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProposalTemplate>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteProposalTemplateMutationOptions(options));
     }
 
 export const getGetProposalUrl = (id: number,) => {

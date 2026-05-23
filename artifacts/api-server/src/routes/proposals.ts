@@ -26,6 +26,7 @@ router.get("/proposals", async (req, res) => {
         successProbability: p.successProbability
           ? parseFloat(p.successProbability)
           : null,
+        keywords: p.keywords ?? [],
         createdAt: p.createdAt.toISOString(),
         updatedAt: p.updatedAt.toISOString(),
       }))
@@ -46,9 +47,17 @@ router.post("/proposals", async (req, res) => {
       if (job) jobTitle = job.title;
     }
 
-    const systemPrompt = `You are FreelanceFlow AI, an expert freelance career assistant that writes high-converting proposals and helps users win more jobs. Write compelling, personalized, professional proposals that showcase the freelancer's skills and match the client's needs.`;
+    let content: string;
+    let successScore: number;
 
-    const userPrompt = `Write a winning freelance proposal for the following job:
+    if (body.content && body.content.trim().length > 0) {
+      // Caller (Studio) already generated the content — just persist.
+      content = body.content;
+      successScore = Math.floor(Math.random() * 20) + 70;
+    } else {
+      const systemPrompt = `You are FreelanceFlow AI, an expert freelance career assistant that writes high-converting proposals and helps users win more jobs. Write compelling, personalized, professional proposals that showcase the freelancer's skills and match the client's needs.`;
+
+      const userPrompt = `Write a winning freelance proposal for the following job:
 
 Job Title: ${jobTitle}
 Job Description: ${body.jobDescription}
@@ -65,19 +74,18 @@ Write a complete, personalized proposal that:
 
 Keep it under 300 words. Make it feel genuine, not generic.`;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_completion_tokens: 1024,
-    });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        max_completion_tokens: 1024,
+      });
 
-    const content =
-      completion.choices[0]?.message?.content ?? "Unable to generate proposal.";
-
-    const successScore = Math.floor(Math.random() * 25) + 65;
+      content = completion.choices[0]?.message?.content ?? "Unable to generate proposal.";
+      successScore = Math.floor(Math.random() * 25) + 65;
+    }
 
     const [proposal] = await db
       .insert(proposals)
@@ -88,6 +96,25 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
         content,
         status: "draft",
         successProbability: String(successScore),
+        tone: body.tone ?? null,
+        length: body.length ?? null,
+        clientName: body.clientName ?? null,
+        keywords: body.keywords ?? [],
+        aiAnalysis: body.aiAnalysis
+          ? {
+              clientName: body.aiAnalysis.clientName ?? null,
+              scamRisk: body.aiAnalysis.scamRisk,
+              scamReasons: body.aiAnalysis.scamReasons,
+              budget: {
+                level: body.aiAnalysis.budget.level,
+                estimate: body.aiAnalysis.budget.estimate ?? null,
+              },
+              urgency: body.aiAnalysis.urgency,
+              keywords: body.aiAnalysis.keywords,
+              fitScore: body.aiAnalysis.fitScore,
+              fitReason: body.aiAnalysis.fitReason,
+            }
+          : null,
       })
       .returning();
 
@@ -107,7 +134,10 @@ Keep it under 300 words. Make it feel genuine, not generic.`;
 router.get("/proposals/:id", async (req, res) => {
   try {
     const uid = (req as unknown as AuthedRequest).userId;
-    const { id } = GetProposalParams.parse({ id: parseInt(req.params.id) });
+    if (!/^\d+$/.test(req.params.id)) {
+      return res.status(404).json({ error: "Proposal not found" });
+    }
+    const { id } = GetProposalParams.parse({ id: parseInt(req.params.id, 10) });
     const [proposal] = await db
       .select()
       .from(proposals)
@@ -131,7 +161,10 @@ router.get("/proposals/:id", async (req, res) => {
 router.delete("/proposals/:id", async (req, res) => {
   try {
     const uid = (req as unknown as AuthedRequest).userId;
-    const { id } = DeleteProposalParams.parse({ id: parseInt(req.params.id) });
+    if (!/^\d+$/.test(req.params.id)) {
+      return res.status(404).json({ error: "Proposal not found" });
+    }
+    const { id } = DeleteProposalParams.parse({ id: parseInt(req.params.id, 10) });
     const [deleted] = await db
       .delete(proposals)
       .where(and(eq(proposals.id, id), eq(proposals.userId, uid)))

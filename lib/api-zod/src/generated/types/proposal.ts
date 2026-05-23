@@ -5,6 +5,7 @@
  * FreelanceFlow AI API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProposalAnalysis } from './proposalAnalysis';
 import type { ProposalStatus } from './proposalStatus';
 
 export interface Proposal {
@@ -16,6 +17,14 @@ export interface Proposal {
   status: ProposalStatus;
   /** @nullable */
   successProbability?: number | null;
+  /** @nullable */
+  tone?: string | null;
+  /** @nullable */
+  length?: string | null;
+  /** @nullable */
+  clientName?: string | null;
+  keywords?: string[];
+  aiAnalysis?: ProposalAnalysis | null;
   createdAt: string;
   updatedAt?: string;
 }

@@ -43,6 +43,57 @@ export const ProposalStatus = {
   rejected: 'rejected',
 } as const;
 
+export type ProposalAnalysisScamRisk = typeof ProposalAnalysisScamRisk[keyof typeof ProposalAnalysisScamRisk];
+
+
+export const ProposalAnalysisScamRisk = {
+  none: 'none',
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type ProposalAnalysisBudgetLevel = typeof ProposalAnalysisBudgetLevel[keyof typeof ProposalAnalysisBudgetLevel];
+
+
+export const ProposalAnalysisBudgetLevel = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  unknown: 'unknown',
+} as const;
+
+export type ProposalAnalysisUrgency = typeof ProposalAnalysisUrgency[keyof typeof ProposalAnalysisUrgency];
+
+
+export const ProposalAnalysisUrgency = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export type ProposalAnalysisBudget = {
+  level: ProposalAnalysisBudgetLevel;
+  /** @nullable */
+  estimate?: string | null;
+};
+
+export interface ProposalAnalysis {
+  /** @nullable */
+  clientName?: string | null;
+  scamRisk: ProposalAnalysisScamRisk;
+  scamReasons: string[];
+  budget: ProposalAnalysisBudget;
+  urgency: ProposalAnalysisUrgency;
+  keywords: string[];
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  fitScore: number;
+  fitReason: string;
+}
+
 export interface Proposal {
   id: number;
   /** @nullable */
@@ -52,9 +103,26 @@ export interface Proposal {
   status: ProposalStatus;
   /** @nullable */
   successProbability?: number | null;
+  /** @nullable */
+  tone?: string | null;
+  /** @nullable */
+  length?: string | null;
+  /** @nullable */
+  clientName?: string | null;
+  keywords?: string[];
+  aiAnalysis?: ProposalAnalysis | null;
   createdAt: string;
   updatedAt?: string;
 }
+
+export type ProposalInputLength = typeof ProposalInputLength[keyof typeof ProposalInputLength];
+
+
+export const ProposalInputLength = {
+  short: 'short',
+  medium: 'medium',
+  long: 'long',
+} as const;
 
 export interface ProposalInput {
   jobId?: number;
@@ -63,6 +131,118 @@ export interface ProposalInput {
   mySkills: string;
   budget?: string;
   tone?: string;
+  length?: ProposalInputLength;
+  /** If provided, save this exact content instead of regenerating */
+  content?: string;
+  /** @nullable */
+  clientName?: string | null;
+  keywords?: string[];
+  aiAnalysis?: ProposalAnalysis;
+}
+
+export interface AnalyzeJobInput {
+  jobTitle?: string;
+  jobDescription: string;
+  mySkills?: string;
+}
+
+export type GenerateDraftInputTone = typeof GenerateDraftInputTone[keyof typeof GenerateDraftInputTone];
+
+
+export const GenerateDraftInputTone = {
+  professional: 'professional',
+  casual: 'casual',
+  enthusiastic: 'enthusiastic',
+  direct: 'direct',
+  premium: 'premium',
+  friendly: 'friendly',
+} as const;
+
+export type GenerateDraftInputLength = typeof GenerateDraftInputLength[keyof typeof GenerateDraftInputLength];
+
+
+export const GenerateDraftInputLength = {
+  short: 'short',
+  medium: 'medium',
+  long: 'long',
+} as const;
+
+export interface GenerateDraftInput {
+  jobTitle: string;
+  jobDescription: string;
+  mySkills: string;
+  budget?: string;
+  tone?: GenerateDraftInputTone;
+  length?: GenerateDraftInputLength;
+  templateId?: number;
+}
+
+export interface GenerateDraftResponse {
+  content: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  score: number;
+  analysis?: ProposalAnalysis | null;
+}
+
+export type RegenerateInputTransform = typeof RegenerateInputTransform[keyof typeof RegenerateInputTransform];
+
+
+export const RegenerateInputTransform = {
+  more_persuasive: 'more_persuasive',
+  shorter: 'shorter',
+  longer: 'longer',
+  more_professional: 'more_professional',
+  more_friendly: 'more_friendly',
+  premium_tone: 'premium_tone',
+  higher_conversion: 'higher_conversion',
+  simpler: 'simpler',
+  more_confident: 'more_confident',
+} as const;
+
+export interface RegenerateInput {
+  content: string;
+  transform: RegenerateInputTransform;
+  jobDescription?: string;
+  tone?: string;
+}
+
+export interface RegenerateResponse {
+  content: string;
+  /** @nullable */
+  score?: number | null;
+}
+
+export interface ProposalTemplate {
+  id: number;
+  name: string;
+  content: string;
+  /** @nullable */
+  niche?: string | null;
+  /** @nullable */
+  tone?: string | null;
+  isFavorite: number;
+  useCount: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProposalTemplateInput {
+  name: string;
+  content: string;
+  niche?: string;
+  tone?: string;
+  isFavorite?: number;
+}
+
+export interface ProposalTemplateUpdate {
+  name?: string;
+  content?: string;
+  niche?: string;
+  tone?: string;
+  isFavorite?: number;
 }
 
 export interface SavedJob {

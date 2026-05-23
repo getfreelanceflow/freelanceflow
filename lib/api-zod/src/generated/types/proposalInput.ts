@@ -5,6 +5,8 @@
  * FreelanceFlow AI API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProposalAnalysis } from './proposalAnalysis';
+import type { ProposalInputLength } from './proposalInputLength';
 
 export interface ProposalInput {
   jobId?: number;
@@ -13,4 +15,11 @@ export interface ProposalInput {
   mySkills: string;
   budget?: string;
   tone?: string;
+  length?: ProposalInputLength;
+  /** If provided, save this exact content instead of regenerating */
+  content?: string;
+  /** @nullable */
+  clientName?: string | null;
+  keywords?: string[];
+  aiAnalysis?: ProposalAnalysis;
 }

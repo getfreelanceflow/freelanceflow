@@ -12,6 +12,7 @@ import Jobs from "@/pages/Jobs";
 import JobDetail from "@/pages/JobDetail";
 import Proposals from "@/pages/Proposals";
 import ProposalNew from "@/pages/ProposalNew";
+import ProposalStudio from "@/pages/ProposalStudio";
 import SavedJobs from "@/pages/SavedJobs";
 import Pricing from "@/pages/Pricing";
 import Clients from "@/pages/Clients";
@@ -115,6 +116,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/jobs/:id"><ProtectedRoute component={JobDetail} /></Route>
             <Route path="/proposals"><ProtectedRoute component={Proposals} /></Route>
             <Route path="/proposals/new"><ProtectedRoute component={ProposalNew} /></Route>
+            <Route path="/studio"><ProtectedRoute component={ProposalStudio} /></Route>
             <Route path="/saved"><ProtectedRoute component={SavedJobs} /></Route>
             <Route path="/clients"><ProtectedRoute component={Clients} /></Route>
             <Route path="/invoices"><ProtectedRoute component={Invoices} /></Route>

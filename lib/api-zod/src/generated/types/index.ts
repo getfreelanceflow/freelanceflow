@@ -6,9 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './analyzeJobInput';
 export * from './dashboardSummary';
 export * from './dashboardSummaryProposalsByStatus';
 export * from './errorResponse';
+export * from './generateDraftInput';
+export * from './generateDraftInputLength';
+export * from './generateDraftInputTone';
+export * from './generateDraftResponse';
 export * from './globalSearchParams';
 export * from './globalSearchResults';
 export * from './healthStatus';
@@ -26,8 +31,20 @@ export * from './openaiMessage';
 export * from './openaiMessageInput';
 export * from './openaiMessageRole';
 export * from './proposal';
+export * from './proposalAnalysis';
+export * from './proposalAnalysisBudget';
+export * from './proposalAnalysisBudgetLevel';
+export * from './proposalAnalysisScamRisk';
+export * from './proposalAnalysisUrgency';
 export * from './proposalInput';
+export * from './proposalInputLength';
 export * from './proposalStatus';
+export * from './proposalTemplate';
+export * from './proposalTemplateInput';
+export * from './proposalTemplateUpdate';
+export * from './regenerateInput';
+export * from './regenerateInputTransform';
+export * from './regenerateResponse';
 export * from './savedJob';
 export * from './savedJobInput';
 export * from './searchHit';

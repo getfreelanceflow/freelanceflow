@@ -127,6 +127,11 @@ export const GetJobResponse = zod.object({
 /**
  * @summary List user proposals
  */
+export const listProposalsResponseAiAnalysisOneFitScoreMin = 0;
+export const listProposalsResponseAiAnalysisOneFitScoreMax = 100;
+
+
+
 export const ListProposalsResponseItem = zod.object({
   "id": zod.number(),
   "jobId": zod.number().nullish(),
@@ -134,6 +139,23 @@ export const ListProposalsResponseItem = zod.object({
   "content": zod.string(),
   "status": zod.enum(['draft', 'sent', 'accepted', 'rejected']),
   "successProbability": zod.number().nullish(),
+  "tone": zod.string().nullish(),
+  "length": zod.string().nullish(),
+  "clientName": zod.string().nullish(),
+  "keywords": zod.array(zod.string()).optional(),
+  "aiAnalysis": zod.union([zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(listProposalsResponseAiAnalysisOneFitScoreMin).max(listProposalsResponseAiAnalysisOneFitScoreMax),
+  "fitReason": zod.string()
+}),zod.null()]).optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -143,13 +165,185 @@ export const ListProposalsResponse = zod.array(ListProposalsResponseItem)
 /**
  * @summary Generate an AI proposal
  */
+export const createProposalBodyAiAnalysisFitScoreMin = 0;
+export const createProposalBodyAiAnalysisFitScoreMax = 100;
+
+
+
 export const CreateProposalBody = zod.object({
   "jobId": zod.number().optional(),
   "jobTitle": zod.string(),
   "jobDescription": zod.string(),
   "mySkills": zod.string(),
   "budget": zod.string().optional(),
+  "tone": zod.string().optional(),
+  "length": zod.enum(['short', 'medium', 'long']).optional(),
+  "content": zod.string().optional().describe('If provided, save this exact content instead of regenerating'),
+  "clientName": zod.string().nullish(),
+  "keywords": zod.array(zod.string()).optional(),
+  "aiAnalysis": zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(createProposalBodyAiAnalysisFitScoreMin).max(createProposalBodyAiAnalysisFitScoreMax),
+  "fitReason": zod.string()
+}).optional()
+})
+
+
+/**
+ * @summary AI analysis of a job posting
+ */
+export const AnalyzeJobBody = zod.object({
+  "jobTitle": zod.string().optional(),
+  "jobDescription": zod.string(),
+  "mySkills": zod.string().optional()
+})
+
+export const analyzeJobResponseFitScoreMin = 0;
+export const analyzeJobResponseFitScoreMax = 100;
+
+
+
+export const AnalyzeJobResponse = zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(analyzeJobResponseFitScoreMin).max(analyzeJobResponseFitScoreMax),
+  "fitReason": zod.string()
+})
+
+
+/**
+ * @summary Generate proposal draft (does not save)
+ */
+export const GenerateProposalDraftBody = zod.object({
+  "jobTitle": zod.string(),
+  "jobDescription": zod.string(),
+  "mySkills": zod.string(),
+  "budget": zod.string().optional(),
+  "tone": zod.enum(['professional', 'casual', 'enthusiastic', 'direct', 'premium', 'friendly']).optional(),
+  "length": zod.enum(['short', 'medium', 'long']).optional(),
+  "templateId": zod.number().optional()
+})
+
+export const generateProposalDraftResponseScoreMin = 0;
+export const generateProposalDraftResponseScoreMax = 100;
+
+export const generateProposalDraftResponseAnalysisOneFitScoreMin = 0;
+export const generateProposalDraftResponseAnalysisOneFitScoreMax = 100;
+
+
+
+export const GenerateProposalDraftResponse = zod.object({
+  "content": zod.string(),
+  "score": zod.number().min(generateProposalDraftResponseScoreMin).max(generateProposalDraftResponseScoreMax),
+  "analysis": zod.union([zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(generateProposalDraftResponseAnalysisOneFitScoreMin).max(generateProposalDraftResponseAnalysisOneFitScoreMax),
+  "fitReason": zod.string()
+}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Transform existing proposal content
+ */
+export const RegenerateProposalBody = zod.object({
+  "content": zod.string(),
+  "transform": zod.enum(['more_persuasive', 'shorter', 'longer', 'more_professional', 'more_friendly', 'premium_tone', 'higher_conversion', 'simpler', 'more_confident']),
+  "jobDescription": zod.string().optional(),
   "tone": zod.string().optional()
+})
+
+export const RegenerateProposalResponse = zod.object({
+  "content": zod.string(),
+  "score": zod.number().nullish()
+})
+
+
+/**
+ * @summary List proposal templates
+ */
+export const ListProposalTemplatesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "content": zod.string(),
+  "niche": zod.string().nullish(),
+  "tone": zod.string().nullish(),
+  "isFavorite": zod.number(),
+  "useCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+export const ListProposalTemplatesResponse = zod.array(ListProposalTemplatesResponseItem)
+
+
+/**
+ * @summary Create a proposal template
+ */
+export const CreateProposalTemplateBody = zod.object({
+  "name": zod.string(),
+  "content": zod.string(),
+  "niche": zod.string().optional(),
+  "tone": zod.string().optional(),
+  "isFavorite": zod.number().optional()
+})
+
+
+/**
+ * @summary Update a template (partial)
+ */
+export const UpdateProposalTemplateParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateProposalTemplateBody = zod.object({
+  "name": zod.string().optional(),
+  "content": zod.string().optional(),
+  "niche": zod.string().optional(),
+  "tone": zod.string().optional(),
+  "isFavorite": zod.number().optional()
+})
+
+export const UpdateProposalTemplateResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "content": zod.string(),
+  "niche": zod.string().nullish(),
+  "tone": zod.string().nullish(),
+  "isFavorite": zod.number(),
+  "useCount": zod.number(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional()
+})
+
+
+/**
+ * @summary Delete a template
+ */
+export const DeleteProposalTemplateParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -160,6 +354,11 @@ export const GetProposalParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const getProposalResponseAiAnalysisOneFitScoreMin = 0;
+export const getProposalResponseAiAnalysisOneFitScoreMax = 100;
+
+
+
 export const GetProposalResponse = zod.object({
   "id": zod.number(),
   "jobId": zod.number().nullish(),
@@ -167,6 +366,23 @@ export const GetProposalResponse = zod.object({
   "content": zod.string(),
   "status": zod.enum(['draft', 'sent', 'accepted', 'rejected']),
   "successProbability": zod.number().nullish(),
+  "tone": zod.string().nullish(),
+  "length": zod.string().nullish(),
+  "clientName": zod.string().nullish(),
+  "keywords": zod.array(zod.string()).optional(),
+  "aiAnalysis": zod.union([zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(getProposalResponseAiAnalysisOneFitScoreMin).max(getProposalResponseAiAnalysisOneFitScoreMax),
+  "fitReason": zod.string()
+}),zod.null()]).optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })
@@ -243,6 +459,11 @@ export const GetDashboardSummaryResponse = zod.object({
 /**
  * @summary Get recent proposals for activity feed
  */
+export const getRecentProposalsResponseAiAnalysisOneFitScoreMin = 0;
+export const getRecentProposalsResponseAiAnalysisOneFitScoreMax = 100;
+
+
+
 export const GetRecentProposalsResponseItem = zod.object({
   "id": zod.number(),
   "jobId": zod.number().nullish(),
@@ -250,6 +471,23 @@ export const GetRecentProposalsResponseItem = zod.object({
   "content": zod.string(),
   "status": zod.enum(['draft', 'sent', 'accepted', 'rejected']),
   "successProbability": zod.number().nullish(),
+  "tone": zod.string().nullish(),
+  "length": zod.string().nullish(),
+  "clientName": zod.string().nullish(),
+  "keywords": zod.array(zod.string()).optional(),
+  "aiAnalysis": zod.union([zod.object({
+  "clientName": zod.string().nullish(),
+  "scamRisk": zod.enum(['none', 'low', 'medium', 'high']),
+  "scamReasons": zod.array(zod.string()),
+  "budget": zod.object({
+  "level": zod.enum(['low', 'medium', 'high', 'unknown']),
+  "estimate": zod.string().nullish()
+}),
+  "urgency": zod.enum(['low', 'medium', 'high']),
+  "keywords": zod.array(zod.string()),
+  "fitScore": zod.number().min(getRecentProposalsResponseAiAnalysisOneFitScoreMin).max(getRecentProposalsResponseAiAnalysisOneFitScoreMax),
+  "fitReason": zod.string()
+}),zod.null()]).optional(),
   "createdAt": zod.string(),
   "updatedAt": zod.string().optional()
 })

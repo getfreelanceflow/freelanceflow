@@ -2,6 +2,7 @@ import { Router, type IRouter } from "express";
 import healthRouter from "./health";
 import jobsRouter from "./jobs";
 import proposalsRouter from "./proposals";
+import proposalStudioRouter from "./proposalStudio";
 import savedJobsRouter from "./savedJobs";
 import dashboardRouter from "./dashboard";
 import clientsRouter from "./clients";
@@ -31,6 +32,10 @@ router.use(servicePackagesRouter);
 router.use(contactRouter);
 router.use(publicProfileRouter);
 router.use(jobsRouter);
+// proposalStudio first — its specific sub-routes (/proposals/analyze-job,
+// /proposals/generate-draft, /proposals/regenerate, /proposal-templates)
+// must match before the generic /proposals/:id handler in proposalsRouter.
+router.use(proposalStudioRouter);
 router.use(proposalsRouter);
 router.use(savedJobsRouter);
 router.use(dashboardRouter);

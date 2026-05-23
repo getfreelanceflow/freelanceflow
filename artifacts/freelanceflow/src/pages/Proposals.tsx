@@ -19,7 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Trash2, Calendar, Eye, CheckCircle2, XCircle, Clock, Copy } from "lucide-react";
+import { FileText, Trash2, Calendar, Eye, CheckCircle2, XCircle, Clock, Copy, Sparkles } from "lucide-react";
 
 type ProposalItem = {
   id: number;
@@ -80,11 +80,18 @@ export default function Proposals() {
           <h1 className="text-3xl font-bold tracking-tight">Proposals</h1>
           <p className="text-muted-foreground mt-2">Manage your AI-generated proposals and applications.</p>
         </div>
-        <Link href="/proposals/new">
-          <Button>
-            <FileText className="mr-2 h-4 w-4" /> Create New Proposal
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/proposals/new">
+            <Button variant="outline">
+              <FileText className="mr-2 h-4 w-4" /> Quick Generate
+            </Button>
+          </Link>
+          <Link href="/studio">
+            <Button data-testid="open-studio">
+              <Sparkles className="mr-2 h-4 w-4" /> Open AI Studio
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (
