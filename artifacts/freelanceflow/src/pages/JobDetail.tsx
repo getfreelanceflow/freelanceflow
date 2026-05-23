@@ -12,6 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, Bookmark, Briefcase, Calendar, DollarSign, MapPin, Star, Zap } from "lucide-react";
+import { useGetBillingMe, getGetBillingMeQueryKey } from "@workspace/api-client-react";
+import HighValueJobBadge from "@/components/HighValueJobBadge";
+import ProUpsellCard from "@/components/ProUpsellCard";
+import { isFreeUser, isHighValueJob } from "@/lib/paywallSignals";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -20,6 +24,9 @@ export default function JobDetail() {
 
   const { data: job, isLoading, error } = useGetJob(jobId, {
     query: { enabled: !!jobId, queryKey: getGetJobQueryKey(jobId) }
+  });
+  const { data: billing } = useGetBillingMe({
+    query: { queryKey: getGetBillingMeQueryKey(), staleTime: 60_000 },
   });
 
   const saveJob = useSaveJob({
@@ -78,7 +85,10 @@ export default function JobDetail() {
 
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
+            {isHighValueJob(job) && <HighValueJobBadge />}
+          </div>
           <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm">
             <span className="flex items-center gap-1.5"><Briefcase className="h-4 w-4" /> {job.platform}</span>
             <span className="flex items-center gap-1.5"><DollarSign className="h-4 w-4" /> ${job.budgetMin} - ${job.budgetMax}</span>
@@ -100,6 +110,13 @@ export default function JobDetail() {
           </Link>
         </div>
       </div>
+
+      {isHighValueJob(job) && isFreeUser(billing) && (
+        <ProUpsellCard
+          variant="high_value_job"
+          context={`Budget up to $${job.budgetMax.toLocaleString()} · ${job.successScore}% match`}
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">

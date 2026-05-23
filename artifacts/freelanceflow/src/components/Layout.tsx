@@ -43,6 +43,7 @@ import NotificationsBell from "@/components/NotificationsBell";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import CreditsPill from "@/components/CreditsPill";
 import InsufficientCreditsDialog from "@/components/InsufficientCreditsDialog";
+import LowCreditBanner from "@/components/LowCreditBanner";
 import { CreditCard } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
@@ -221,6 +222,7 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </header>
 
+        <LowCreditBanner />
         <main className="flex-1 overflow-auto p-4 md:p-8">
           <div className="mx-auto max-w-6xl">{children}</div>
         </main>

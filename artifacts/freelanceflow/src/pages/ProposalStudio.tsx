@@ -18,6 +18,9 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import CreditCostBadge from "@/components/CreditCostBadge";
+import ProUpsellCard from "@/components/ProUpsellCard";
+import { isFreeUser } from "@/lib/paywallSignals";
+import { useGetBillingMe, getGetBillingMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -174,6 +177,13 @@ export default function ProposalStudio() {
   const [content, setContent] = useState("");
   const [score, setScore] = useState<number | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisShape | null>(null);
+  const { data: billing } = useGetBillingMe({
+    query: { queryKey: getGetBillingMeQueryKey(), staleTime: 60_000 },
+  });
+  const showPremiumNudge =
+    isFreeUser(billing) &&
+    !!analysis &&
+    (analysis.fitScore >= 75 || analysis.budget.level === "high");
   const [history, setHistory] = useState<string[]>([]);
   const [activeTransform, setActiveTransform] = useState<Transform | null>(null);
 
@@ -705,6 +715,13 @@ export default function ProposalStudio() {
                   </div>
                 ) : content ? (
                   <>
+                    {showPremiumNudge && (
+                      <ProUpsellCard
+                        variant="premium_proposal"
+                        context={`Strong match · fit ${analysis!.fitScore}/100`}
+                        className="mb-3"
+                      />
+                    )}
                     <Textarea
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
