@@ -1,13 +1,18 @@
 import { Resend } from "resend";
 
-let cachedKey: string | null | undefined;
+type ResendConfig = { apiKey: string; fromEmail: string | null };
 
-async function getResendApiKey(): Promise<string | null> {
-  if (cachedKey !== undefined) return cachedKey;
+let cachedConfig: ResendConfig | null | undefined;
+
+async function getResendConfig(): Promise<ResendConfig | null> {
+  if (cachedConfig !== undefined) return cachedConfig;
 
   if (process.env.RESEND_API_KEY) {
-    cachedKey = process.env.RESEND_API_KEY;
-    return cachedKey;
+    cachedConfig = {
+      apiKey: process.env.RESEND_API_KEY,
+      fromEmail: process.env.EMAIL_FROM ?? null,
+    };
+    return cachedConfig;
   }
 
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
@@ -19,7 +24,7 @@ async function getResendApiKey(): Promise<string | null> {
         : null;
 
   if (!hostname || !xReplitToken) {
-    cachedKey = null;
+    cachedConfig = null;
     return null;
   }
 
@@ -29,20 +34,39 @@ async function getResendApiKey(): Promise<string | null> {
       { headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken } },
     );
     if (!res.ok) {
-      cachedKey = null;
+      cachedConfig = null;
       return null;
     }
     const data = (await res.json()) as {
-      items?: Array<{ settings?: { api_key?: string; apiKey?: string } }>;
+      items?: Array<{
+        settings?: {
+          api_key?: string;
+          apiKey?: string;
+          from_email?: string;
+          fromEmail?: string;
+        };
+      }>;
     };
     const item = data.items?.[0];
     const apiKey = item?.settings?.api_key ?? item?.settings?.apiKey ?? null;
-    cachedKey = apiKey;
-    return apiKey;
+    const fromEmail =
+      item?.settings?.from_email ?? item?.settings?.fromEmail ?? null;
+    if (!apiKey) {
+      cachedConfig = null;
+      return null;
+    }
+    cachedConfig = { apiKey, fromEmail };
+    return cachedConfig;
   } catch {
-    cachedKey = null;
+    cachedConfig = null;
     return null;
   }
+}
+
+// Clear the cached config so the next sendEmail re-fetches from the connector
+// proxy. Useful after the user rotates their Resend key.
+export function clearEmailConfigCache() {
+  cachedConfig = undefined;
 }
 
 export type SendEmailArgs = {
@@ -58,12 +82,11 @@ export type SendEmailResult =
   | { ok: true; id: string | null; provider: "resend" }
   | { ok: false; reason: "not_configured" | "error"; message?: string };
 
-const DEFAULT_FROM =
-  process.env.EMAIL_FROM ?? "FreelanceFlow AI <onboarding@resend.dev>";
+const FALLBACK_FROM = "FreelanceFlow AI <onboarding@resend.dev>";
 
 export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
-  const apiKey = await getResendApiKey();
-  if (!apiKey) {
+  const config = await getResendConfig();
+  if (!config) {
     console.warn(
       "[email] Resend not configured — falling back to console log. To: %s | Subject: %s",
       Array.isArray(args.to) ? args.to.join(", ") : args.to,
@@ -72,10 +95,12 @@ export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
     return { ok: false, reason: "not_configured" };
   }
 
+  const from = args.from ?? config.fromEmail ?? FALLBACK_FROM;
+
   try {
-    const resend = new Resend(apiKey);
+    const resend = new Resend(config.apiKey);
     const { data, error } = await resend.emails.send({
-      from: args.from ?? DEFAULT_FROM,
+      from,
       to: args.to,
       subject: args.subject,
       html: args.html,
