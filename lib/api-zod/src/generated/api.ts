@@ -18,6 +18,39 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Post a community job that other users can find
+ */
+export const createJobBodyTitleMin = 3;
+export const createJobBodyTitleMax = 200;
+
+export const createJobBodyDescriptionMin = 10;
+export const createJobBodyDescriptionMax = 5000;
+
+export const createJobBodyCategoryMax = 80;
+
+export const createJobBodyBudgetMinMin = 0;
+
+export const createJobBodyBudgetMaxMin = 0;
+
+export const createJobBodyJobTypeDefault = `remote`;
+
+export const CreateJobBody = zod.object({
+  "title": zod.string().min(createJobBodyTitleMin).max(createJobBodyTitleMax),
+  "description": zod.string().min(createJobBodyDescriptionMin).max(createJobBodyDescriptionMax),
+  "category": zod.string().min(1).max(createJobBodyCategoryMax),
+  "budgetMin": zod.number().min(createJobBodyBudgetMinMin),
+  "budgetMax": zod.number().min(createJobBodyBudgetMaxMin),
+  "skills": zod.array(zod.string()).optional(),
+  "jobType": zod.enum(['remote', 'onsite', 'hybrid']).default(createJobBodyJobTypeDefault),
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "clientName": zod.string().nullish()
+})
+
+
+/**
  * @summary List freelance jobs
  */
 export const ListJobsQueryParams = zod.object({
@@ -48,7 +81,9 @@ export const ListJobsResponseItem = zod.object({
   "location": zod.string().nullish(),
   "applyUrl": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
-  "contactPhone": zod.string().nullish()
+  "contactPhone": zod.string().nullish(),
+  "isCommunityPosted": zod.boolean().optional(),
+  "postedByUserId": zod.string().nullish().describe('Only included on owner-scoped endpoints (\/jobs\/mine, POST \/jobs).')
 })
 export const ListJobsResponse = zod.array(ListJobsResponseItem)
 
@@ -103,6 +138,41 @@ export const ListNotificationsResponse = zod.array(ListNotificationsResponseItem
 
 
 /**
+ * @summary List jobs the current user has posted
+ */
+export const ListMyJobsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "budgetMin": zod.number(),
+  "budgetMax": zod.number(),
+  "skills": zod.array(zod.string()),
+  "postedAt": zod.string(),
+  "platform": zod.string(),
+  "successScore": zod.number(),
+  "clientName": zod.string().nullish(),
+  "clientRating": zod.number().nullish(),
+  "jobType": zod.string().optional(),
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish(),
+  "isCommunityPosted": zod.boolean().optional(),
+  "postedByUserId": zod.string().nullish().describe('Only included on owner-scoped endpoints (\/jobs\/mine, POST \/jobs).')
+})
+export const ListMyJobsResponse = zod.array(ListMyJobsResponseItem)
+
+
+/**
+ * @summary Delete one of the current user's posted jobs
+ */
+export const DeleteJobParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Get a job by ID
  */
 export const GetJobParams = zod.object({
@@ -126,7 +196,9 @@ export const GetJobResponse = zod.object({
   "location": zod.string().nullish(),
   "applyUrl": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
-  "contactPhone": zod.string().nullish()
+  "contactPhone": zod.string().nullish(),
+  "isCommunityPosted": zod.boolean().optional(),
+  "postedByUserId": zod.string().nullish().describe('Only included on owner-scoped endpoints (\/jobs\/mine, POST \/jobs).')
 })
 
 
@@ -426,7 +498,9 @@ export const ListSavedJobsResponseItem = zod.object({
   "location": zod.string().nullish(),
   "applyUrl": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
-  "contactPhone": zod.string().nullish()
+  "contactPhone": zod.string().nullish(),
+  "isCommunityPosted": zod.boolean().optional(),
+  "postedByUserId": zod.string().nullish().describe('Only included on owner-scoped endpoints (\/jobs\/mine, POST \/jobs).')
 }).optional()
 })
 export const ListSavedJobsResponse = zod.array(ListSavedJobsResponseItem)
@@ -523,7 +597,9 @@ export const GetTopJobsResponseItem = zod.object({
   "location": zod.string().nullish(),
   "applyUrl": zod.string().nullish(),
   "contactEmail": zod.string().nullish(),
-  "contactPhone": zod.string().nullish()
+  "contactPhone": zod.string().nullish(),
+  "isCommunityPosted": zod.boolean().optional(),
+  "postedByUserId": zod.string().nullish().describe('Only included on owner-scoped endpoints (\/jobs\/mine, POST \/jobs).')
 })
 export const GetTopJobsResponse = zod.array(GetTopJobsResponseItem)
 

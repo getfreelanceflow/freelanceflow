@@ -5,23 +5,30 @@
  * FreelanceFlow AI API
  * OpenAPI spec version: 0.1.0
  */
+import type { PostJobInputJobType } from './postJobInputJobType';
 
-export interface Job {
-  id: number;
+export interface PostJobInput {
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
   title: string;
+  /**
+     * @minLength 10
+     * @maxLength 5000
+     */
   description: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
   category: string;
+  /** @minimum 0 */
   budgetMin: number;
+  /** @minimum 0 */
   budgetMax: number;
-  skills: string[];
-  postedAt: string;
-  platform: string;
-  successScore: number;
-  /** @nullable */
-  clientName?: string | null;
-  /** @nullable */
-  clientRating?: number | null;
-  jobType?: string;
+  skills?: string[];
+  jobType?: PostJobInputJobType;
   /** @nullable */
   location?: string | null;
   /** @nullable */
@@ -30,10 +37,6 @@ export interface Job {
   contactEmail?: string | null;
   /** @nullable */
   contactPhone?: string | null;
-  isCommunityPosted?: boolean;
-  /**
-     * Only included on owner-scoped endpoints (/jobs/mine, POST /jobs).
-     * @nullable
-     */
-  postedByUserId?: string | null;
+  /** @nullable */
+  clientName?: string | null;
 }

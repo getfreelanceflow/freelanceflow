@@ -20,6 +20,7 @@ export const jobs = pgTable("jobs", {
   applyUrl: text("apply_url"),
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
+  postedByUserId: text("posted_by_user_id"),
 });
 
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true });

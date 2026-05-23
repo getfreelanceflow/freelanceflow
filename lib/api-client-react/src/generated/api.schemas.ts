@@ -37,6 +37,55 @@ export interface Job {
   contactEmail?: string | null;
   /** @nullable */
   contactPhone?: string | null;
+  isCommunityPosted?: boolean;
+  /**
+     * Only included on owner-scoped endpoints (/jobs/mine, POST /jobs).
+     * @nullable
+     */
+  postedByUserId?: string | null;
+}
+
+export type PostJobInputJobType = typeof PostJobInputJobType[keyof typeof PostJobInputJobType];
+
+
+export const PostJobInputJobType = {
+  remote: 'remote',
+  onsite: 'onsite',
+  hybrid: 'hybrid',
+} as const;
+
+export interface PostJobInput {
+  /**
+     * @minLength 3
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 5000
+     */
+  description: string;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  category: string;
+  /** @minimum 0 */
+  budgetMin: number;
+  /** @minimum 0 */
+  budgetMax: number;
+  skills?: string[];
+  jobType?: PostJobInputJobType;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  applyUrl?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  clientName?: string | null;
 }
 
 export type ProposalStatus = typeof ProposalStatus[keyof typeof ProposalStatus];

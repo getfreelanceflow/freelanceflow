@@ -30,6 +30,8 @@ export * from './openaiError';
 export * from './openaiMessage';
 export * from './openaiMessageInput';
 export * from './openaiMessageRole';
+export * from './postJobInput';
+export * from './postJobInputJobType';
 export * from './proposal';
 export * from './proposalAnalysis';
 export * from './proposalAnalysisBudget';

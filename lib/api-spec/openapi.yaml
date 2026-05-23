@@ -35,6 +35,23 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 
   /jobs:
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Post a community job that other users can find
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostJobInput"
+      responses:
+        "201":
+          description: Created job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
     get:
       operationId: listJobs
       tags: [jobs]
@@ -118,7 +135,35 @@ paths:
                 items:
                   $ref: "#/components/schemas/Notification"
 
+  /jobs/mine:
+    get:
+      operationId: listMyJobs
+      tags: [jobs]
+      summary: List jobs the current user has posted
+      responses:
+        "200":
+          description: List of jobs posted by the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
   /jobs/{id}:
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Delete one of the current user's posted jobs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
     get:
       operationId: getJob
       tags: [jobs]
@@ -637,6 +682,52 @@ components:
         contactEmail:
           type: ["string", "null"]
         contactPhone:
+          type: ["string", "null"]
+        isCommunityPosted:
+          type: boolean
+        postedByUserId:
+          type: ["string", "null"]
+          description: Only included on owner-scoped endpoints (/jobs/mine, POST /jobs).
+
+    PostJobInput:
+      type: object
+      required: [title, description, category, budgetMin, budgetMax]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 200
+        description:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        category:
+          type: string
+          minLength: 1
+          maxLength: 80
+        budgetMin:
+          type: number
+          minimum: 0
+        budgetMax:
+          type: number
+          minimum: 0
+        skills:
+          type: array
+          items:
+            type: string
+        jobType:
+          type: string
+          enum: [remote, onsite, hybrid]
+          default: remote
+        location:
+          type: ["string", "null"]
+        applyUrl:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        contactPhone:
+          type: ["string", "null"]
+        clientName:
           type: ["string", "null"]
 
     Proposal:

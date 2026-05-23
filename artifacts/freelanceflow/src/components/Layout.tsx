@@ -32,6 +32,7 @@ import {
   Linkedin,
   BookOpenCheck,
   Package as PackageIcon,
+  PlusCircle,
   Inbox,
   MessageSquareQuote,
 } from "lucide-react";
@@ -55,6 +56,7 @@ const navGroups: { labelKey: string; items: { href: string; labelKey: string; ic
       { href: "/resume-match", labelKey: "nav.resumeMatch", icon: FileSearch },
       { href: "/proposals", labelKey: "nav.proposals", icon: FileText },
       { href: "/saved", labelKey: "nav.savedJobs", icon: Bookmark },
+      { href: "/my-jobs", labelKey: "nav.myJobs", icon: PlusCircle },
     ],
   },
   {

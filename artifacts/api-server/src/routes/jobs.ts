@@ -1,12 +1,47 @@
 import { Router } from "express";
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import { db, jobs } from "@workspace/db";
-import { eq, and, gte, lte, sql, ilike, or, type SQL } from "drizzle-orm";
+import { eq, and, gte, lte, sql, ilike, or, desc, type SQL } from "drizzle-orm";
 import {
   ListJobsQueryParams,
   GetJobParams,
 } from "@workspace/api-zod";
 import { isZipQuery, resolveZip } from "../lib/zipLookup";
+import { requireUser, type AuthedRequest } from "../lib/requireUser";
+
+const CreateJobBodySchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(10).max(5000),
+  category: z.string().min(1).max(80),
+  budgetMin: z.number().nonnegative(),
+  budgetMax: z.number().nonnegative(),
+  skills: z.array(z.string().min(1).max(50)).max(20).default([]),
+  jobType: z.enum(["remote", "onsite", "hybrid"]).default("remote"),
+  location: z.string().max(200).optional().nullable(),
+  applyUrl: z.string().url().max(500).optional().nullable(),
+  contactEmail: z.string().email().max(200).optional().nullable(),
+  contactPhone: z.string().max(50).optional().nullable(),
+  clientName: z.string().max(120).optional().nullable(),
+});
+
+function serializeJob(
+  j: typeof jobs.$inferSelect,
+  opts: { includeOwnerId?: boolean } = {},
+) {
+  const { postedByUserId, ...rest } = j;
+  return {
+    ...rest,
+    budgetMin: parseFloat(j.budgetMin),
+    budgetMax: parseFloat(j.budgetMax),
+    successScore: parseFloat(j.successScore),
+    clientRating: j.clientRating ? parseFloat(j.clientRating) : null,
+    // Only expose owner ID on owner-scoped responses; never in public feed.
+    ...(opts.includeOwnerId ? { postedByUserId } : {}),
+    // Always indicate whether a job is community-posted so the UI can badge it
+    // without leaking the actual user ID.
+    isCommunityPosted: postedByUserId !== null,
+  };
+}
 
 const router = Router();
 
@@ -133,20 +168,83 @@ router.get("/jobs", async (req, res) => {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(sql`${jobs.postedAt} DESC`);
 
-    res.json(
-      result.map((j) => ({
-        ...j,
-        budgetMin: parseFloat(j.budgetMin),
-        budgetMax: parseFloat(j.budgetMax),
-        successScore: parseFloat(j.successScore),
-        clientRating: j.clientRating ? parseFloat(j.clientRating) : null,
-      }))
-    );
+    res.json(result.map((j) => serializeJob(j)));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to list jobs";
     console.error("[jobs] list error:", msg);
     const status = e instanceof ZodError ? 400 : 500;
     res.status(status).json({ error: msg });
+  }
+});
+
+// List jobs posted by the current user
+router.get("/jobs/mine", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const result = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.postedByUserId, uid))
+      .orderBy(desc(jobs.postedAt));
+    res.json(result.map((j) => serializeJob(j, { includeOwnerId: true })));
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to list your jobs" });
+  }
+});
+
+// Create a community-posted job
+router.post("/jobs", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const body = CreateJobBodySchema.parse(req.body);
+
+    if (body.budgetMax < body.budgetMin) {
+      return res.status(400).json({ error: "Maximum budget must be greater than or equal to minimum budget" });
+    }
+
+    const [row] = await db
+      .insert(jobs)
+      .values({
+        title: body.title.trim(),
+        description: body.description.trim(),
+        category: body.category.trim(),
+        budgetMin: String(body.budgetMin),
+        budgetMax: String(body.budgetMax),
+        skills: body.skills.map((s) => s.trim()).filter(Boolean),
+        platform: "Community",
+        successScore: "0",
+        clientName: body.clientName?.trim() || null,
+        jobType: body.jobType,
+        location: body.location?.trim() || null,
+        applyUrl: body.applyUrl?.trim() || null,
+        contactEmail: body.contactEmail?.trim() || null,
+        contactPhone: body.contactPhone?.trim() || null,
+        postedByUserId: uid,
+      })
+      .returning();
+
+    res.status(201).json(serializeJob(row, { includeOwnerId: true }));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Failed to create job";
+    const status = e instanceof ZodError ? 400 : 500;
+    res.status(status).json({ error: msg });
+  }
+});
+
+// Delete one of your own posted jobs
+router.delete("/jobs/:id", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const [row] = await db
+      .delete(jobs)
+      .where(and(eq(jobs.id, id), eq(jobs.postedByUserId, uid)))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Job not found or not owned by you" });
+    res.status(204).end();
+  } catch (e) {
+    res.status(500).json({ error: e instanceof Error ? e.message : "Failed to delete job" });
   }
 });
 
@@ -157,13 +255,7 @@ router.get("/jobs/:id", async (req, res) => {
     if (!job) {
       return res.status(404).json({ error: "Job not found" });
     }
-    res.json({
-      ...job,
-      budgetMin: parseFloat(job.budgetMin),
-      budgetMax: parseFloat(job.budgetMax),
-      successScore: parseFloat(job.successScore),
-      clientRating: job.clientRating ? parseFloat(job.clientRating) : null,
-    });
+    res.json(serializeJob(job));
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Failed to fetch job";
     console.error("[jobs] get error:", msg);

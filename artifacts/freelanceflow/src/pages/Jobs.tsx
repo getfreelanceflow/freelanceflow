@@ -15,7 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin, ExternalLink, Phone, Mail } from "lucide-react";
+import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin, ExternalLink, Phone, Mail, PlusCircle, Users } from "lucide-react";
+import PostJobDialog from "@/components/PostJobDialog";
 import { useT } from "@/i18n/LanguageContext";
 
 const POSTED_WITHIN_OPTIONS = [
@@ -77,6 +78,7 @@ function safePhone(raw: string | null | undefined): string | null {
 
 export default function Jobs() {
   const { t } = useT();
+  const [postOpen, setPostOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -161,10 +163,18 @@ export default function Jobs() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("jobs.title")}</h1>
-        <p className="text-muted-foreground mt-2">{t("jobs.subtitle")}</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t("jobs.title")}</h1>
+          <p className="text-muted-foreground mt-2">{t("jobs.subtitle")}</p>
+        </div>
+        <Button onClick={() => setPostOpen(true)} data-testid="jobs-post-button">
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Post a job
+        </Button>
       </div>
+
+      <PostJobDialog open={postOpen} onOpenChange={setPostOpen} />
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -336,8 +346,14 @@ export default function Jobs() {
                         {job.title}
                       </Link>
                     </CardTitle>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> {job.platform}</span>
+                    <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
+                      {job.platform === "Community" ? (
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 flex items-center gap-1">
+                          <Users className="h-3 w-3" /> Community
+                        </Badge>
+                      ) : (
+                        <span className="flex items-center gap-1"><Briefcase className="h-4 w-4" /> {job.platform}</span>
+                      )}
                       <span className="flex items-center gap-1"><DollarSign className="h-4 w-4" /> ${job.budgetMin} - ${job.budgetMax}</span>
                       {job.location ? (
                         <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {job.location}</span>
