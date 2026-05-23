@@ -6,6 +6,7 @@ import {
   ListJobsQueryParams,
   GetJobParams,
 } from "@workspace/api-zod";
+import { isZipQuery, resolveZip } from "../lib/zipLookup";
 
 const router = Router();
 
@@ -96,7 +97,27 @@ router.get("/jobs", async (req, res) => {
       conditions.push(eq(jobs.jobType, query.jobType));
     }
     if (query.location) {
-      conditions.push(ilike(jobs.location, `%${query.location}%`));
+      const raw = query.location.trim();
+      const locTerms = new Set<string>();
+      // Always include the original (handles partial city, "remote", etc.)
+      if (raw.length > 0) locTerms.add(raw);
+      // ZIP → city + state expansion
+      if (isZipQuery(raw)) {
+        const { city, state } = resolveZip(raw);
+        if (city) locTerms.add(city);
+        if (state) locTerms.add(state);
+      }
+      const locConds: SQL[] = [];
+      for (const t of locTerms) {
+        locConds.push(ilike(jobs.location, `%${t}%`));
+      }
+      // Treat "remote" search as also matching jobType=remote (since remote
+      // jobs often have empty/null location strings).
+      if (raw.toLowerCase() === "remote") {
+        locConds.push(eq(jobs.jobType, "remote"));
+      }
+      const combined = or(...locConds);
+      if (combined) conditions.push(combined);
     }
     if (query.postedWithin && query.postedWithin !== "any") {
       const hoursMap: Record<string, number> = { "24h": 24, "7d": 24 * 7, "30d": 24 * 30 };
