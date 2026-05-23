@@ -73,52 +73,53 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Deep Navy Backgrounds */
-  --background: 222 47% 7%;
+  /* Deep Navy / Black Backgrounds — #0B0F1A */
+  --background: 222 41% 7%;
   --foreground: 210 40% 98%;
   --border: 217 32% 17%;
-  
-  --card: 222 47% 9%;
+
+  --card: 222 41% 9%;
   --card-foreground: 210 40% 98%;
   --card-border: 217 32% 17%;
 
-  --popover: 222 47% 9%;
+  --popover: 222 41% 9%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217 32% 17%;
 
-  /* Vivid Teal/Cyan Accents */
-  --primary: 173 80% 40%;
-  --primary-foreground: 164 86% 16%;
-  
+  /* Electric Blue Primary — #3B82F6 (trust + AI) */
+  --primary: 217 91% 60%;
+  --primary-foreground: 0 0% 100%;
+
   --secondary: 217 32% 17%;
   --secondary-foreground: 210 40% 98%;
 
   --muted: 217 32% 17%;
   --muted-foreground: 215 20.2% 65.1%;
 
-  --accent: 217 32% 17%;
-  --accent-foreground: 210 40% 98%;
+  /* Neon Green Accent — #22C55E (success / winning) */
+  --accent: 142 71% 45%;
+  --accent-foreground: 0 0% 100%;
 
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 
   --input: 217 32% 17%;
-  --ring: 173 80% 40%;
+  --ring: 217 91% 60%;
 
-  --sidebar: 222 47% 7%;
+  --sidebar: 222 47% 5%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-border: 217 32% 17%;
-  --sidebar-primary: 173 80% 40%;
-  --sidebar-primary-foreground: 164 86% 16%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 217 32% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 173 80% 40%;
+  --sidebar-ring: 217 91% 60%;
 
-  --chart-1: 173 80% 40%;
-  --chart-2: 199 89% 48%;
-  --chart-3: 156 72% 67%;
-  --chart-4: 217 91% 60%;
-  --chart-5: 234 89% 74%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 199 89% 60%;
+  --chart-4: 262 83% 65%;
+  --chart-5: 38 92% 55%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
