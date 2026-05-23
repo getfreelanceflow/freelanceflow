@@ -40,7 +40,7 @@ const tierSchema = z.object({
   deliverables: z.array(z.string().min(1)).default([]),
 });
 
-const upsertSchema = z.object({
+const upsertBaseSchema = z.object({
   title: z.string().min(1).max(120),
   tagline: z.string().max(200).nullable().optional(),
   description: z.string().min(1),
@@ -54,6 +54,43 @@ const upsertSchema = z.object({
   ctaUrl: safeUrl.nullable().optional().or(z.literal("")),
   isPublic: z.boolean().default(true),
 });
+
+function tiersUnique(tiers: Array<{ name: string }> | undefined): boolean {
+  if (!tiers || tiers.length === 0) return true;
+  const seen = new Set<string>();
+  for (const t of tiers) {
+    const k = t.name.trim().toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+  }
+  return true;
+}
+
+const tiersUniqueRefinement = {
+  message: "Tier names must be unique",
+  path: ["tiers"] as (string | number)[],
+};
+
+const upsertSchema = upsertBaseSchema.refine(
+  (v) => tiersUnique(v.tiers),
+  tiersUniqueRefinement,
+);
+
+const upsertPatchSchema = upsertBaseSchema.partial().refine(
+  (v) => tiersUnique(v.tiers),
+  tiersUniqueRefinement,
+);
+
+// Server-side invariant: when tiers are provided, the base `price` shown in
+// list cards / single-tier fallbacks is anchored to the cheapest tier so the
+// UI's "from $X" preview is always coherent regardless of what client sent.
+function coerceBasePriceFromTiers(
+  basePrice: number,
+  tiers: Array<{ price: number }> | undefined,
+): number {
+  if (!tiers || tiers.length === 0) return basePrice;
+  return Math.min(...tiers.map((t) => t.price));
+}
 
 // Minimal in-memory IP rate limit for public endpoints. Not durable across
 // restarts or instances, but stops trivial counter-inflation by a single client.
@@ -175,8 +212,12 @@ router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5
           deliveryDays: number;
           revisions: number;
         }>;
-        const selectedTier = parsed.tier
-          ? tiers.find((t) => t.name === parsed.tier)
+        // Case-insensitive tier match. Unknown tier names are silently
+        // dropped — uniqueness is enforced at write-time so this only happens
+        // if a client sends a stale/wrong tier name.
+        const wantTier = parsed.tier?.trim().toLowerCase();
+        const selectedTier = wantTier
+          ? tiers.find((t) => t.name.trim().toLowerCase() === wantTier)
           : undefined;
         const priceLabel = selectedTier
           ? `${selectedTier.price} ${pkg.currency} · ${selectedTier.deliveryDays}-day delivery · ${selectedTier.revisions} revisions`
@@ -235,6 +276,7 @@ router.post("/packages", requireUser, async (req, res) => {
     const uid = (req as unknown as AuthedRequest).userId;
     const body = upsertSchema.parse(req.body);
     const slug = await uniqueSlug(body.title);
+    const persistedPrice = coerceBasePriceFromTiers(body.price, body.tiers);
     const [row] = await db
       .insert(servicePackages)
       .values({
@@ -243,7 +285,7 @@ router.post("/packages", requireUser, async (req, res) => {
         title: body.title,
         tagline: body.tagline ?? null,
         description: body.description,
-        price: String(body.price),
+        price: String(persistedPrice),
         currency: body.currency,
         deliveryDays: body.deliveryDays,
         revisions: body.revisions,
@@ -264,12 +306,11 @@ router.patch("/packages/:id", requireUser, async (req, res) => {
   try {
     const uid = (req as unknown as AuthedRequest).userId;
     const id = parseInt(String(req.params.id), 10);
-    const body = upsertSchema.partial().parse(req.body);
+    const body = upsertPatchSchema.parse(req.body);
     const updates: Record<string, unknown> = {};
     if (body.title !== undefined) updates.title = body.title;
     if (body.tagline !== undefined) updates.tagline = body.tagline;
     if (body.description !== undefined) updates.description = body.description;
-    if (body.price !== undefined) updates.price = String(body.price);
     if (body.currency !== undefined) updates.currency = body.currency;
     if (body.deliveryDays !== undefined) updates.deliveryDays = body.deliveryDays;
     if (body.revisions !== undefined) updates.revisions = body.revisions;
@@ -278,6 +319,13 @@ router.patch("/packages/:id", requireUser, async (req, res) => {
     if (body.category !== undefined) updates.category = body.category;
     if (body.ctaUrl !== undefined) updates.ctaUrl = body.ctaUrl ? body.ctaUrl : null;
     if (body.isPublic !== undefined) updates.isPublic = body.isPublic;
+    // Price coherence: if tiers are being set/updated in this request, anchor
+    // base price to min(tier prices). Otherwise honor the explicit price.
+    if (body.tiers !== undefined && body.tiers.length > 0) {
+      updates.price = String(Math.min(...body.tiers.map((t) => t.price)));
+    } else if (body.price !== undefined) {
+      updates.price = String(body.price);
+    }
     const [row] = await db
       .update(servicePackages)
       .set(updates)
