@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { ClerkProvider, RedirectToSignIn, SignIn, SignUp, useAuth } from '@clerk/react';
 import { Switch, Route, useLocation, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,48 +8,58 @@ import { LanguageProvider } from "@/i18n/LanguageContext";
 
 import Layout from "@/components/Layout";
 import Landing from "@/pages/Landing";
-import Dashboard from "@/pages/Dashboard";
-import Jobs from "@/pages/Jobs";
-import JobDetail from "@/pages/JobDetail";
-import Proposals from "@/pages/Proposals";
-import ProposalNew from "@/pages/ProposalNew";
-import ProposalStudio from "@/pages/ProposalStudio";
-import SavedJobs from "@/pages/SavedJobs";
-import Pricing from "@/pages/Pricing";
-import Clients from "@/pages/Clients";
-import Invoices from "@/pages/Invoices";
-import Earnings from "@/pages/Earnings";
-import Followups from "@/pages/Followups";
-import Templates from "@/pages/Templates";
-import Profile from "@/pages/Profile";
-import RateCalculator from "@/pages/RateCalculator";
-import CoverLetter from "@/pages/CoverLetter";
-import ProposalScore from "@/pages/ProposalScore";
-import ResumeMatch from "@/pages/ResumeMatch";
-import TimeTracker from "@/pages/TimeTracker";
-import Tasks from "@/pages/Tasks";
-import Expenses from "@/pages/Expenses";
-import Goals from "@/pages/Goals";
-import Packages from "@/pages/Packages";
-import Leads from "@/pages/Leads";
-import Reviews from "@/pages/Reviews";
-import PublicPackage from "@/pages/PublicPackage";
-import PublicProfile from "@/pages/PublicProfile";
-import Contract from "@/pages/Contract";
-import Negotiate from "@/pages/Negotiate";
-import SkillGap from "@/pages/SkillGap";
-import DreamJob from "@/pages/DreamJob";
-import Outreach from "@/pages/Outreach";
-import DiscoveryQuestions from "@/pages/DiscoveryQuestions";
-import ScopeCreep from "@/pages/ScopeCreep";
-import LatePayment from "@/pages/LatePayment";
-import LinkedInPost from "@/pages/LinkedInPost";
-import CaseStudy from "@/pages/CaseStudy";
-import NicheFinder from "@/pages/NicheFinder";
-import Contact from "@/pages/Contact";
-import NotFound from "@/pages/not-found";
 
-const queryClient = new QueryClient();
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Jobs = lazy(() => import("@/pages/Jobs"));
+const JobDetail = lazy(() => import("@/pages/JobDetail"));
+const Proposals = lazy(() => import("@/pages/Proposals"));
+const ProposalNew = lazy(() => import("@/pages/ProposalNew"));
+const ProposalStudio = lazy(() => import("@/pages/ProposalStudio"));
+const SavedJobs = lazy(() => import("@/pages/SavedJobs"));
+const Pricing = lazy(() => import("@/pages/Pricing"));
+const Clients = lazy(() => import("@/pages/Clients"));
+const Invoices = lazy(() => import("@/pages/Invoices"));
+const Earnings = lazy(() => import("@/pages/Earnings"));
+const Followups = lazy(() => import("@/pages/Followups"));
+const Templates = lazy(() => import("@/pages/Templates"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const RateCalculator = lazy(() => import("@/pages/RateCalculator"));
+const CoverLetter = lazy(() => import("@/pages/CoverLetter"));
+const ProposalScore = lazy(() => import("@/pages/ProposalScore"));
+const ResumeMatch = lazy(() => import("@/pages/ResumeMatch"));
+const TimeTracker = lazy(() => import("@/pages/TimeTracker"));
+const Tasks = lazy(() => import("@/pages/Tasks"));
+const Expenses = lazy(() => import("@/pages/Expenses"));
+const Goals = lazy(() => import("@/pages/Goals"));
+const Packages = lazy(() => import("@/pages/Packages"));
+const Leads = lazy(() => import("@/pages/Leads"));
+const Reviews = lazy(() => import("@/pages/Reviews"));
+const PublicPackage = lazy(() => import("@/pages/PublicPackage"));
+const PublicProfile = lazy(() => import("@/pages/PublicProfile"));
+const Contract = lazy(() => import("@/pages/Contract"));
+const Negotiate = lazy(() => import("@/pages/Negotiate"));
+const SkillGap = lazy(() => import("@/pages/SkillGap"));
+const DreamJob = lazy(() => import("@/pages/DreamJob"));
+const Outreach = lazy(() => import("@/pages/Outreach"));
+const DiscoveryQuestions = lazy(() => import("@/pages/DiscoveryQuestions"));
+const ScopeCreep = lazy(() => import("@/pages/ScopeCreep"));
+const LatePayment = lazy(() => import("@/pages/LatePayment"));
+const LinkedInPost = lazy(() => import("@/pages/LinkedInPost"));
+const CaseStudy = lazy(() => import("@/pages/CaseStudy"));
+const NicheFinder = lazy(() => import("@/pages/NicheFinder"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -59,14 +70,32 @@ function stripBase(path: string): string {
     : path;
 }
 
+function PageFallback() {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isSignedIn, isLoaded } = useAuth();
   if (!isLoaded) return null;
   if (!isSignedIn) return <RedirectToSignIn />;
   return (
     <Layout>
-      <Component />
+      <Suspense fallback={<PageFallback />}>
+        <Component />
+      </Suspense>
     </Layout>
+  );
+}
+
+function PublicLazy({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <Suspense fallback={<PageFallback />}>
+      <Component />
+    </Suspense>
   );
 }
 
@@ -103,10 +132,10 @@ function ClerkProviderWithRoutes() {
         <TooltipProvider>
           <Switch>
             <Route path="/" component={Landing} />
-            <Route path="/pricing" component={Pricing} />
-            <Route path="/contact" component={Contact} />
-            <Route path="/p/:slug" component={PublicPackage} />
-            <Route path="/u/:slug" component={PublicProfile} />
+            <Route path="/pricing"><PublicLazy component={Pricing} /></Route>
+            <Route path="/contact"><PublicLazy component={Contact} /></Route>
+            <Route path="/p/:slug"><PublicLazy component={PublicPackage} /></Route>
+            <Route path="/u/:slug"><PublicLazy component={PublicProfile} /></Route>
             <Route path="/sign-in/*?" component={SignInPage} />
             <Route path="/sign-up/*?" component={SignUpPage} />
 
@@ -146,7 +175,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/case-study"><ProtectedRoute component={CaseStudy} /></Route>
             <Route path="/niche-finder"><ProtectedRoute component={NicheFinder} /></Route>
 
-            <Route component={NotFound} />
+            <Route><PublicLazy component={NotFound} /></Route>
           </Switch>
         </TooltipProvider>
         <Toaster />
