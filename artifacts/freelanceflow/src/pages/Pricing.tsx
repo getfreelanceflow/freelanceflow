@@ -213,7 +213,7 @@ export default function Pricing() {
             <CardHeader>
               <CardTitle className="text-lg leading-8">Free</CardTitle>
               <CardDescription className="mt-4 text-sm leading-6">
-                Try FreelanceFlow with 5 AI credits refreshed every 24 hours.
+                Try FreelanceFlow with 1 AI credit every 4.8 hours (5 per day).
               </CardDescription>
               <p className="mt-6 flex items-baseline gap-x-1">
                 <span className="text-4xl font-bold tracking-tight">$0</span>
@@ -222,7 +222,7 @@ export default function Pricing() {
             <CardContent className="flex-1">
               <ul role="list" className="mt-2 space-y-3 text-sm leading-6">
                 {[
-                  "5 AI credits refreshed every 24 hours",
+                  "1 AI credit every 4.8 hours (up to 5)",
                   "Job feed + saved jobs",
                   "Basic dashboard",
                   "Community support",

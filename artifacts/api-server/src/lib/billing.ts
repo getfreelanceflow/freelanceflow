@@ -71,12 +71,16 @@ export const CREDIT_PACKS = {
 
 export type CreditPackId = keyof typeof CREDIT_PACKS;
 
-/** Free users get refreshed up to {PLANS.free.monthlyCredits} credits every 24 hours. */
-const FREE_REFRESH_INTERVAL_MS = 24 * 60 * 60 * 1000;
+/**
+ * Free users drip-earn 1 credit every 4.8 hours, capping the *refreshed* portion at
+ * PLANS.free.monthlyCredits (5). This accumulates to 5 credits per 24h while
+ * feeling more frequent than a single daily lump-sum.
+ */
+const FREE_DRIP_INTERVAL_MS = Math.round(4.8 * 60 * 60 * 1000); // 17_280_000 ms
 
 export async function getOrCreateBilling(userId: string): Promise<UserBilling> {
   const [existing] = await db.select().from(userBilling).where(eq(userBilling.userId, userId));
-  if (existing) return maybeRefreshFreeDaily(existing);
+  if (existing) return maybeDripFreeCredits(existing);
   const [row] = await db
     .insert(userBilling)
     .values({ userId, plan: "free", credits: PLANS.free.monthlyCredits })
@@ -88,18 +92,25 @@ export async function getOrCreateBilling(userId: string): Promise<UserBilling> {
 }
 
 /**
- * Top free users up to PLANS.free.monthlyCredits (5) once per 24h.
- * Uses GREATEST so users who bought credit packs are never punished.
+ * Drip free credits: +1 per FREE_DRIP_INTERVAL_MS elapsed since last drip.
+ * Caps the refresh component at the free plan size (5) using
+ *   newCredits = LEAST(current + earned, GREATEST(current, 5))
+ * so paid credit-pack holders are never punished and free users can't farm above 5.
+ * Advances `freeCreditsResetAt` by the consumed interval count so partial periods carry over.
  */
-async function maybeRefreshFreeDaily(b: UserBilling): Promise<UserBilling> {
+async function maybeDripFreeCredits(b: UserBilling): Promise<UserBilling> {
   if (b.plan !== "free") return b;
-  const last = b.freeCreditsResetAt?.getTime() ?? 0;
-  if (Date.now() - last < FREE_REFRESH_INTERVAL_MS) return b;
+  const lastMs = b.freeCreditsResetAt?.getTime() ?? Date.now();
+  const elapsed = Date.now() - lastMs;
+  const earned = Math.floor(elapsed / FREE_DRIP_INTERVAL_MS);
+  if (earned <= 0) return b;
+  const newResetAt = new Date(lastMs + earned * FREE_DRIP_INTERVAL_MS);
+  const cap = PLANS.free.monthlyCredits;
   const [updated] = await db
     .update(userBilling)
     .set({
-      credits: sql`GREATEST(${userBilling.credits}, ${PLANS.free.monthlyCredits})`,
-      freeCreditsResetAt: new Date(),
+      credits: sql`LEAST(${userBilling.credits} + ${earned}, GREATEST(${userBilling.credits}, ${cap}))`,
+      freeCreditsResetAt: newResetAt,
       updatedAt: new Date(),
     })
     .where(eq(userBilling.userId, b.userId))

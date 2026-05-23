@@ -107,7 +107,7 @@ export default function Billing() {
             </CardTitle>
             <CardDescription>
               {billing?.plan === "free"
-                ? "Free plan — 5 credits refresh every 24 hours."
+                ? "Free plan — earn 1 credit every 4.8 hours (up to 5)."
                 : billing?.currentPeriodEnd
                   ? `Renews on ${new Date(billing.currentPeriodEnd).toLocaleDateString()}`
                   : "Active subscription"}
