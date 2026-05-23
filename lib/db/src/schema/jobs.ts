@@ -17,6 +17,9 @@ export const jobs = pgTable("jobs", {
   clientRating: numeric("client_rating", { precision: 3, scale: 1 }),
   jobType: text("job_type").notNull().default("remote"),
   location: text("location"),
+  applyUrl: text("apply_url"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
 });
 
 export const insertJobSchema = createInsertSchema(jobs).omit({ id: true });

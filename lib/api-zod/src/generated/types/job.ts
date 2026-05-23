@@ -24,4 +24,10 @@ export interface Job {
   jobType?: string;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  applyUrl?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
 }

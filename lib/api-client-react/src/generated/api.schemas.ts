@@ -31,6 +31,12 @@ export interface Job {
   jobType?: string;
   /** @nullable */
   location?: string | null;
+  /** @nullable */
+  applyUrl?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
 }
 
 export type ProposalStatus = typeof ProposalStatus[keyof typeof ProposalStatus];

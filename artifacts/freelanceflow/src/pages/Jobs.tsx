@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin } from "lucide-react";
+import { Search, Bookmark, Zap, Briefcase, DollarSign, Loader2, X, MapPin, ExternalLink, Phone, Mail } from "lucide-react";
 import { useT } from "@/i18n/LanguageContext";
 
 const POSTED_WITHIN_OPTIONS = [
@@ -341,6 +341,40 @@ export default function Jobs() {
                   ))}
                 </div>
               </CardContent>
+              {(job.applyUrl || job.contactEmail || job.contactPhone) && (
+                <div className="px-6 pt-3 flex flex-wrap gap-2 border-t border-border/50">
+                  {job.applyUrl ? (
+                    <a
+                      href={job.applyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      data-testid={`job-apply-link-${job.id}`}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" /> Visit site
+                    </a>
+                  ) : null}
+                  {job.contactPhone ? (
+                    <a
+                      href={`tel:${job.contactPhone.replace(/[^+\d]/g, "")}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors"
+                      data-testid={`job-phone-link-${job.id}`}
+                    >
+                      <Phone className="h-3.5 w-3.5" /> {job.contactPhone}
+                    </a>
+                  ) : null}
+                  {job.contactEmail ? (
+                    <a
+                      href={`mailto:${job.contactEmail}?subject=${encodeURIComponent("Application: " + job.title)}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-muted hover:bg-muted/70 transition-colors max-w-full truncate"
+                      data-testid={`job-email-link-${job.id}`}
+                    >
+                      <Mail className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">{job.contactEmail}</span>
+                    </a>
+                  ) : null}
+                </div>
+              )}
               <CardFooter className="flex justify-between border-t border-border/50 bg-muted/20 pt-4 mt-4">
                 <Button 
                   variant="outline" 
@@ -350,11 +384,20 @@ export default function Jobs() {
                 >
                   <Bookmark className="mr-2 h-4 w-4" /> {t("jobs.saveButton")}
                 </Button>
-                <Link href={`/proposals/new?jobId=${job.id}`}>
-                  <Button size="sm">
-                    {t("jobs.generateProposalButton")}
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  {job.applyUrl ? (
+                    <a href={job.applyUrl} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm">
+                        <ExternalLink className="mr-2 h-4 w-4" /> Apply
+                      </Button>
+                    </a>
+                  ) : null}
+                  <Link href={`/proposals/new?jobId=${job.id}`}>
+                    <Button size="sm">
+                      {t("jobs.generateProposalButton")}
+                    </Button>
+                  </Link>
+                </div>
               </CardFooter>
             </Card>
           ))}

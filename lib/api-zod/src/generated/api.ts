@@ -45,7 +45,10 @@ export const ListJobsResponseItem = zod.object({
   "clientName": zod.string().nullish(),
   "clientRating": zod.number().nullish(),
   "jobType": zod.string().optional(),
-  "location": zod.string().nullish()
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish()
 })
 export const ListJobsResponse = zod.array(ListJobsResponseItem)
 
@@ -120,7 +123,10 @@ export const GetJobResponse = zod.object({
   "clientName": zod.string().nullish(),
   "clientRating": zod.number().nullish(),
   "jobType": zod.string().optional(),
-  "location": zod.string().nullish()
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish()
 })
 
 
@@ -417,7 +423,10 @@ export const ListSavedJobsResponseItem = zod.object({
   "clientName": zod.string().nullish(),
   "clientRating": zod.number().nullish(),
   "jobType": zod.string().optional(),
-  "location": zod.string().nullish()
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish()
 }).optional()
 })
 export const ListSavedJobsResponse = zod.array(ListSavedJobsResponseItem)
@@ -511,7 +520,10 @@ export const GetTopJobsResponseItem = zod.object({
   "clientName": zod.string().nullish(),
   "clientRating": zod.number().nullish(),
   "jobType": zod.string().optional(),
-  "location": zod.string().nullish()
+  "location": zod.string().nullish(),
+  "applyUrl": zod.string().nullish(),
+  "contactEmail": zod.string().nullish(),
+  "contactPhone": zod.string().nullish()
 })
 export const GetTopJobsResponse = zod.array(GetTopJobsResponseItem)
 

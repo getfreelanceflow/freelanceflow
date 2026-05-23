@@ -632,6 +632,12 @@ components:
           type: string
         location:
           type: ["string", "null"]
+        applyUrl:
+          type: ["string", "null"]
+        contactEmail:
+          type: ["string", "null"]
+        contactPhone:
+          type: ["string", "null"]
 
     Proposal:
       type: object
