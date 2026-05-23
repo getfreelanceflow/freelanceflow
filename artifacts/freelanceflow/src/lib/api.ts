@@ -336,7 +336,7 @@ export const api = {
     customFetch<PublicServicePackage>(`${base}/packages/public/${slug}`),
   inquirePackage: (
     slug: string,
-    body?: { name?: string; email?: string; message?: string },
+    body?: { name?: string; email?: string; message?: string; tier?: string },
   ) =>
     customFetch<{ ok: boolean; delivered?: boolean }>(
       `${base}/packages/public/${slug}/inquire`,
@@ -361,6 +361,14 @@ export type PublicServicePackage = Omit<
   "userId" | "id" | "createdAt"
 >;
 
+export type PackageTier = {
+  name: string;
+  price: number;
+  deliveryDays: number;
+  revisions: number;
+  deliverables: string[];
+};
+
 export type ServicePackage = {
   id: number;
   userId: string;
@@ -373,6 +381,7 @@ export type ServicePackage = {
   deliveryDays: number;
   revisions: number;
   deliverables: string[];
+  tiers: PackageTier[];
   category: string | null;
   ctaUrl: string | null;
   isPublic: boolean;

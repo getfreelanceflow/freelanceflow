@@ -32,6 +32,14 @@ const safeUrl = z
     message: "URL must start with http:// or https://",
   });
 
+const tierSchema = z.object({
+  name: z.string().min(1).max(40),
+  price: z.number().nonnegative(),
+  deliveryDays: z.number().int().positive(),
+  revisions: z.number().int().nonnegative(),
+  deliverables: z.array(z.string().min(1)).default([]),
+});
+
 const upsertSchema = z.object({
   title: z.string().min(1).max(120),
   tagline: z.string().max(200).nullable().optional(),
@@ -41,6 +49,7 @@ const upsertSchema = z.object({
   deliveryDays: z.number().int().positive().default(7),
   revisions: z.number().int().nonnegative().default(2),
   deliverables: z.array(z.string().min(1)).default([]),
+  tiers: z.array(tierSchema).max(5).default([]),
   category: z.string().nullable().optional(),
   ctaUrl: safeUrl.nullable().optional().or(z.literal("")),
   isPublic: z.boolean().default(true),
@@ -80,6 +89,7 @@ function publicView(p: typeof servicePackages.$inferSelect) {
     deliveryDays: p.deliveryDays,
     revisions: p.revisions,
     deliverables: p.deliverables,
+    tiers: p.tiers ?? [],
     category: p.category,
     ctaUrl: p.ctaUrl,
     isPublic: p.isPublic,
@@ -135,6 +145,7 @@ const inquireSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   email: z.string().email().optional(),
   message: z.string().max(5000).optional(),
+  tier: z.string().max(40).optional(),
 });
 
 router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5), async (req, res) => {
@@ -157,16 +168,34 @@ router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5
     if (parsed.name && parsed.email && parsed.message) {
       const ownerEmail = await getUserEmail(pkg.userId);
       if (ownerEmail) {
+        // Resolve selected tier (if any) for price/delivery details in the email.
+        const tiers = (pkg.tiers ?? []) as Array<{
+          name: string;
+          price: number;
+          deliveryDays: number;
+          revisions: number;
+        }>;
+        const selectedTier = parsed.tier
+          ? tiers.find((t) => t.name === parsed.tier)
+          : undefined;
+        const priceLabel = selectedTier
+          ? `${selectedTier.price} ${pkg.currency} · ${selectedTier.deliveryDays}-day delivery · ${selectedTier.revisions} revisions`
+          : `${pkg.price} ${pkg.currency}`;
+        const tierLine = selectedTier
+          ? `<p><strong>Selected tier:</strong> ${escapeHtml(selectedTier.name)}</p>`
+          : "";
         const html = `
           <h2>New inquiry for "${escapeHtml(pkg.title)}"</h2>
           <p><strong>From:</strong> ${escapeHtml(parsed.name)} &lt;${escapeHtml(parsed.email)}&gt;</p>
-          <p><strong>Package:</strong> ${escapeHtml(pkg.title)} — ${escapeHtml(String(pkg.price))} ${escapeHtml(pkg.currency)}</p>
+          <p><strong>Package:</strong> ${escapeHtml(pkg.title)} — ${escapeHtml(priceLabel)}</p>
+          ${tierLine}
           <hr/>
           <p style="white-space:pre-wrap">${escapeHtml(parsed.message)}</p>
           <hr/>
           <p style="color:#888;font-size:12px">Sent via your FreelanceFlow AI shareable package page.</p>
         `;
-        const text = `New inquiry for "${pkg.title}"\nFrom: ${parsed.name} <${parsed.email}>\n\n${parsed.message}`;
+        const tierTextLine = selectedTier ? `Selected tier: ${selectedTier.name}\n` : "";
+        const text = `New inquiry for "${pkg.title}"\nFrom: ${parsed.name} <${parsed.email}>\n${tierTextLine}\n${parsed.message}`;
         const result = await sendEmail({
           to: ownerEmail,
           subject: `[FreelanceFlow] New inquiry: ${pkg.title}`,
@@ -219,6 +248,7 @@ router.post("/packages", requireUser, async (req, res) => {
         deliveryDays: body.deliveryDays,
         revisions: body.revisions,
         deliverables: body.deliverables,
+        tiers: body.tiers,
         category: body.category ?? null,
         ctaUrl: body.ctaUrl ? body.ctaUrl : null,
         isPublic: body.isPublic,
@@ -244,6 +274,7 @@ router.patch("/packages/:id", requireUser, async (req, res) => {
     if (body.deliveryDays !== undefined) updates.deliveryDays = body.deliveryDays;
     if (body.revisions !== undefined) updates.revisions = body.revisions;
     if (body.deliverables !== undefined) updates.deliverables = body.deliverables;
+    if (body.tiers !== undefined) updates.tiers = body.tiers;
     if (body.category !== undefined) updates.category = body.category;
     if (body.ctaUrl !== undefined) updates.ctaUrl = body.ctaUrl ? body.ctaUrl : null;
     if (body.isPublic !== undefined) updates.isPublic = body.isPublic;

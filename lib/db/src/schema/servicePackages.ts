@@ -1,6 +1,14 @@
-import { pgTable, serial, text, timestamp, integer, boolean, numeric } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, boolean, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+export type PackageTier = {
+  name: string;
+  price: number;
+  deliveryDays: number;
+  revisions: number;
+  deliverables: string[];
+};
 
 export const servicePackages = pgTable("service_packages", {
   id: serial("id").primaryKey(),
@@ -14,6 +22,9 @@ export const servicePackages = pgTable("service_packages", {
   deliveryDays: integer("delivery_days").notNull().default(7),
   revisions: integer("revisions").notNull().default(2),
   deliverables: text("deliverables").array().notNull().default([]),
+  // Optional tiered pricing (Basic/Standard/Premium). If empty array, the
+  // package renders as single-tier using the top-level price/deliveryDays/etc.
+  tiers: jsonb("tiers").$type<PackageTier[]>().notNull().default([]),
   category: text("category"),
   ctaUrl: text("cta_url"),
   isPublic: boolean("is_public").notNull().default(true),

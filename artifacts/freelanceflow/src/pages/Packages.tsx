@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type ServicePackage } from "@/lib/api";
+import { api, type ServicePackage, type PackageTier } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,8 +33,18 @@ import {
   Eye,
   MessageCircle,
   DollarSign,
+  Layers,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
+
+type TierForm = {
+  name: string;
+  price: string;
+  deliveryDays: string;
+  revisions: string;
+  deliverables: string;
+};
 
 type FormState = {
   title: string;
@@ -48,7 +58,15 @@ type FormState = {
   category: string;
   ctaUrl: string;
   isPublic: boolean;
+  tiered: boolean;
+  tiers: TierForm[];
 };
+
+const DEFAULT_TIERS: TierForm[] = [
+  { name: "Basic", price: "", deliveryDays: "7", revisions: "1", deliverables: "" },
+  { name: "Standard", price: "", deliveryDays: "10", revisions: "2", deliverables: "" },
+  { name: "Premium", price: "", deliveryDays: "14", revisions: "3", deliverables: "" },
+];
 
 const empty: FormState = {
   title: "",
@@ -62,14 +80,37 @@ const empty: FormState = {
   category: "",
   ctaUrl: "",
   isPublic: true,
+  tiered: false,
+  tiers: DEFAULT_TIERS,
 };
 
+function tiersToApi(tiers: TierForm[]): PackageTier[] {
+  return tiers
+    .filter((t) => t.name.trim() && t.price.trim())
+    .map((t) => ({
+      name: t.name.trim(),
+      price: Number(t.price) || 0,
+      deliveryDays: parseInt(t.deliveryDays, 10) || 7,
+      revisions: parseInt(t.revisions, 10) || 0,
+      deliverables: t.deliverables
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }));
+}
+
 function toBody(f: FormState) {
+  const tiers = f.tiered ? tiersToApi(f.tiers) : [];
+  // When tiered, anchor base price to the cheapest tier so card previews and
+  // single-tier fallbacks still show a sensible number.
+  const basePrice = f.tiered && tiers.length > 0
+    ? Math.min(...tiers.map((t) => t.price))
+    : (Number(f.price) || 0);
   return {
     title: f.title.trim(),
     tagline: f.tagline.trim() || null,
     description: f.description.trim(),
-    price: Number(f.price) || 0,
+    price: basePrice,
     currency: f.currency.trim().toUpperCase() || "USD",
     deliveryDays: parseInt(f.deliveryDays, 10) || 7,
     revisions: parseInt(f.revisions, 10) || 0,
@@ -77,6 +118,7 @@ function toBody(f: FormState) {
       .split("\n")
       .map((s) => s.trim())
       .filter(Boolean),
+    tiers,
     category: f.category.trim() || null,
     ctaUrl: f.ctaUrl.trim() || null,
     isPublic: f.isPublic,
@@ -84,6 +126,7 @@ function toBody(f: FormState) {
 }
 
 function fromPackage(p: ServicePackage): FormState {
+  const hasTiers = (p.tiers ?? []).length > 0;
   return {
     title: p.title,
     tagline: p.tagline ?? "",
@@ -96,6 +139,16 @@ function fromPackage(p: ServicePackage): FormState {
     category: p.category ?? "",
     ctaUrl: p.ctaUrl ?? "",
     isPublic: p.isPublic,
+    tiered: hasTiers,
+    tiers: hasTiers
+      ? p.tiers.map((t) => ({
+          name: t.name,
+          price: String(t.price),
+          deliveryDays: String(t.deliveryDays),
+          revisions: String(t.revisions),
+          deliverables: t.deliverables.join("\n"),
+        }))
+      : DEFAULT_TIERS,
   };
 }
 
@@ -152,13 +205,42 @@ export default function Packages() {
     setOpen(true);
   }
   function save() {
-    if (!form.title.trim() || !form.description.trim() || !form.price) {
-      toast.error("Title, description, and price are required");
+    if (!form.title.trim() || !form.description.trim()) {
+      toast.error("Title and description are required");
+      return;
+    }
+    if (form.tiered) {
+      const valid = tiersToApi(form.tiers);
+      if (valid.length === 0) {
+        toast.error("Add at least one tier with a name and price");
+        return;
+      }
+    } else if (!form.price) {
+      toast.error("Price is required (or enable tiered pricing)");
       return;
     }
     const body = toBody(form);
     if (editingId == null) create.mutate(body);
     else update.mutate({ id: editingId, body });
+  }
+  function updateTier(idx: number, patch: Partial<TierForm>) {
+    setForm({
+      ...form,
+      tiers: form.tiers.map((t, i) => (i === idx ? { ...t, ...patch } : t)),
+    });
+  }
+  function addTier() {
+    if (form.tiers.length >= 5) return;
+    setForm({
+      ...form,
+      tiers: [
+        ...form.tiers,
+        { name: `Tier ${form.tiers.length + 1}`, price: "", deliveryDays: "7", revisions: "1", deliverables: "" },
+      ],
+    });
+  }
+  function removeTier(idx: number) {
+    setForm({ ...form, tiers: form.tiers.filter((_, i) => i !== idx) });
   }
   function shareUrl(slug: string) {
     return `${window.location.origin}/p/${slug}`;
@@ -187,7 +269,7 @@ export default function Packages() {
               <Plus className="h-4 w-4 mr-2" /> New package
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingId == null ? "New package" : "Edit package"}</DialogTitle>
             </DialogHeader>
@@ -213,21 +295,11 @@ export default function Packages() {
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={5}
+                  rows={4}
                   placeholder="What's included, who it's for, what outcome they get."
                 />
               </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label>Price</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Currency</Label>
                   <Input
@@ -245,35 +317,138 @@ export default function Packages() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Delivery (days)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.deliveryDays}
-                    onChange={(e) => setForm({ ...form, deliveryDays: e.target.value })}
-                  />
+
+              <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                <div className="flex items-start gap-3">
+                  <Layers className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <Label className="text-sm">Tiered pricing (Basic / Standard / Premium)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Offer multiple price points so buyers self-select the right fit.
+                    </p>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Revisions included</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={form.revisions}
-                    onChange={(e) => setForm({ ...form, revisions: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label>Deliverables (one per line)</Label>
-                <Textarea
-                  value={form.deliverables}
-                  onChange={(e) => setForm({ ...form, deliverables: e.target.value })}
-                  rows={4}
-                  placeholder={"3 design concepts\nFinal Figma file\n2 rounds of revisions"}
+                <Switch
+                  checked={form.tiered}
+                  onCheckedChange={(v) => setForm({ ...form, tiered: v })}
                 />
               </div>
+
+              {form.tiered ? (
+                <div className="space-y-3">
+                  {form.tiers.map((t, i) => (
+                    <Card key={i} className="border-primary/30">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <Input
+                            className="font-semibold w-44"
+                            value={t.name}
+                            onChange={(e) => updateTier(i, { name: e.target.value })}
+                            placeholder="Tier name"
+                          />
+                          {form.tiers.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTier(i)}
+                              aria-label="Remove tier"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="grid gap-1">
+                            <Label className="text-xs">Price</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={t.price}
+                              onChange={(e) => updateTier(i, { price: e.target.value })}
+                            />
+                          </div>
+                          <div className="grid gap-1">
+                            <Label className="text-xs">Delivery (days)</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={t.deliveryDays}
+                              onChange={(e) => updateTier(i, { deliveryDays: e.target.value })}
+                            />
+                          </div>
+                          <div className="grid gap-1">
+                            <Label className="text-xs">Revisions</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={t.revisions}
+                              onChange={(e) => updateTier(i, { revisions: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-1">
+                          <Label className="text-xs">What's included (one per line)</Label>
+                          <Textarea
+                            rows={3}
+                            value={t.deliverables}
+                            onChange={(e) => updateTier(i, { deliverables: e.target.value })}
+                            placeholder={"Item 1\nItem 2"}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {form.tiers.length < 5 && (
+                    <Button variant="outline" size="sm" onClick={addTier} className="w-full">
+                      <Plus className="h-4 w-4 mr-2" /> Add another tier
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Price</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.price}
+                        onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Delivery (days)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={form.deliveryDays}
+                        onChange={(e) => setForm({ ...form, deliveryDays: e.target.value })}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Revisions</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={form.revisions}
+                        onChange={(e) => setForm({ ...form, revisions: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Deliverables (one per line)</Label>
+                    <Textarea
+                      value={form.deliverables}
+                      onChange={(e) => setForm({ ...form, deliverables: e.target.value })}
+                      rows={4}
+                      placeholder={"3 design concepts\nFinal Figma file\n2 rounds of revisions"}
+                    />
+                  </div>
+                </>
+              )}
+
               <div className="grid gap-2">
                 <Label>Booking / payment link (optional)</Label>
                 <Input
@@ -330,89 +505,118 @@ export default function Packages() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {packages.map((p) => (
-            <Card key={p.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <CardTitle className="truncate">{p.title}</CardTitle>
-                    {p.tagline && (
-                      <CardDescription className="line-clamp-2">{p.tagline}</CardDescription>
-                    )}
+          {packages.map((p) => {
+            const hasTiers = (p.tiers ?? []).length > 0;
+            return (
+              <Card key={p.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <CardTitle className="truncate">{p.title}</CardTitle>
+                      {p.tagline && (
+                        <CardDescription className="line-clamp-2">{p.tagline}</CardDescription>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1 items-end">
+                      {hasTiers && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Layers className="h-3 w-3" />
+                          {p.tiers.length} tiers
+                        </Badge>
+                      )}
+                      {!p.isPublic && <Badge variant="outline">Private</Badge>}
+                    </div>
                   </div>
-                  {!p.isPublic && <Badge variant="outline">Private</Badge>}
-                </div>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-3">
-                <div className="flex items-baseline gap-1">
-                  <DollarSign className="h-4 w-4 text-primary" />
-                  <span className="text-2xl font-bold">
-                    {Number(p.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-sm text-muted-foreground">{p.currency}</span>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {p.deliveryDays}-day delivery · {p.revisions} revision
-                  {p.revisions === 1 ? "" : "s"}
-                </div>
-                {p.deliverables?.length > 0 && (
-                  <ul className="text-sm space-y-1">
-                    {p.deliverables.slice(0, 3).map((d, i) => (
-                      <li key={i} className="text-muted-foreground line-clamp-1">
-                        • {d}
-                      </li>
-                    ))}
-                    {p.deliverables.length > 3 && (
-                      <li className="text-xs text-muted-foreground">
-                        +{p.deliverables.length - 3} more
-                      </li>
+                </CardHeader>
+                <CardContent className="flex-1 space-y-3">
+                  <div className="flex items-baseline gap-1">
+                    {hasTiers && (
+                      <span className="text-xs text-muted-foreground mr-1">from</span>
                     )}
-                  </ul>
-                )}
-                <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
-                  <span className="flex items-center gap-1">
-                    <Eye className="h-3 w-3" /> {p.views}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MessageCircle className="h-3 w-3" /> {p.inquiries}
-                  </span>
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    <span className="text-2xl font-bold">
+                      {Number(p.price).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                    </span>
+                    <span className="text-sm text-muted-foreground">{p.currency}</span>
+                  </div>
+                  {hasTiers ? (
+                    <ul className="text-sm space-y-1">
+                      {p.tiers.map((t, i) => (
+                        <li key={i} className="text-muted-foreground flex justify-between gap-2">
+                          <span className="truncate">{t.name}</span>
+                          <span className="text-foreground font-medium whitespace-nowrap">
+                            {Number(t.price).toLocaleString(undefined, { maximumFractionDigits: 2 })} {p.currency}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <>
+                      <div className="text-xs text-muted-foreground">
+                        {p.deliveryDays}-day delivery · {p.revisions} revision
+                        {p.revisions === 1 ? "" : "s"}
+                      </div>
+                      {p.deliverables?.length > 0 && (
+                        <ul className="text-sm space-y-1">
+                          {p.deliverables.slice(0, 3).map((d, i) => (
+                            <li key={i} className="text-muted-foreground line-clamp-1">
+                              • {d}
+                            </li>
+                          ))}
+                          {p.deliverables.length > 3 && (
+                            <li className="text-xs text-muted-foreground">
+                              +{p.deliverables.length - 3} more
+                            </li>
+                          )}
+                        </ul>
+                      )}
+                    </>
+                  )}
+                  <div className="flex gap-4 text-xs text-muted-foreground pt-2 border-t">
+                    <span className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" /> {p.views}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MessageCircle className="h-3 w-3" /> {p.inquiries}
+                    </span>
+                  </div>
+                </CardContent>
+                <div className="flex gap-2 p-4 pt-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => copyShare(p.slug)}
+                    disabled={!p.isPublic}
+                    title={p.isPublic ? "Copy share link" : "Make package public to share"}
+                  >
+                    <Copy className="h-3 w-3 mr-1" /> Share
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`/p/${p.slug}`, "_blank")}
+                    disabled={!p.isPublic}
+                    title="Open public page"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (confirm(`Delete "${p.title}"?`)) del.mutate(p.id);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
-              </CardContent>
-              <div className="flex gap-2 p-4 pt-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => copyShare(p.slug)}
-                  disabled={!p.isPublic}
-                  title={p.isPublic ? "Copy share link" : "Make package public to share"}
-                >
-                  <Copy className="h-3 w-3 mr-1" /> Share
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(`/p/${p.slug}`, "_blank")}
-                  disabled={!p.isPublic}
-                  title="Open public page"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => openEdit(p)}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (confirm(`Delete "${p.title}"?`)) del.mutate(p.id);
-                  }}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
