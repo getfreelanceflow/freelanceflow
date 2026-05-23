@@ -13,3 +13,4 @@ export * from "./tasks";
 export * from "./expenses";
 export * from "./goals";
 export * from "./servicePackages";
+export * from "./packageInquiries";

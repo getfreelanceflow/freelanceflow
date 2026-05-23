@@ -46,6 +46,8 @@ type TierForm = {
   deliverables: string;
 };
 
+type FaqForm = { question: string; answer: string };
+
 type FormState = {
   title: string;
   tagline: string;
@@ -60,6 +62,7 @@ type FormState = {
   isPublic: boolean;
   tiered: boolean;
   tiers: TierForm[];
+  faqs: FaqForm[];
 };
 
 const DEFAULT_TIERS: TierForm[] = [
@@ -82,6 +85,7 @@ const empty: FormState = {
   isPublic: true,
   tiered: false,
   tiers: DEFAULT_TIERS,
+  faqs: [],
 };
 
 function tiersToApi(tiers: TierForm[]): PackageTier[] {
@@ -119,6 +123,9 @@ function toBody(f: FormState) {
       .map((s) => s.trim())
       .filter(Boolean),
     tiers,
+    faqs: f.faqs
+      .map((q) => ({ question: q.question.trim(), answer: q.answer.trim() }))
+      .filter((q) => q.question && q.answer),
     category: f.category.trim() || null,
     ctaUrl: f.ctaUrl.trim() || null,
     isPublic: f.isPublic,
@@ -149,6 +156,7 @@ function fromPackage(p: ServicePackage): FormState {
           deliverables: t.deliverables.join("\n"),
         }))
       : DEFAULT_TIERS,
+    faqs: (p.faqs ?? []).map((q) => ({ question: q.question, answer: q.answer })),
   };
 }
 
@@ -238,6 +246,19 @@ export default function Packages() {
         { name: `Tier ${form.tiers.length + 1}`, price: "", deliveryDays: "7", revisions: "1", deliverables: "" },
       ],
     });
+  }
+  function addFaq() {
+    if (form.faqs.length >= 20) return;
+    setForm({ ...form, faqs: [...form.faqs, { question: "", answer: "" }] });
+  }
+  function updateFaq(idx: number, patch: Partial<FaqForm>) {
+    setForm({
+      ...form,
+      faqs: form.faqs.map((q, i) => (i === idx ? { ...q, ...patch } : q)),
+    });
+  }
+  function removeFaq(idx: number) {
+    setForm({ ...form, faqs: form.faqs.filter((_, i) => i !== idx) });
   }
   function removeTier(idx: number) {
     setForm({ ...form, tiers: form.tiers.filter((_, i) => i !== idx) });
@@ -448,6 +469,47 @@ export default function Packages() {
                   </div>
                 </>
               )}
+
+              <div className="grid gap-3 pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>FAQs (optional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Pre-answer the questions every client asks — builds trust and reduces back-and-forth.
+                    </p>
+                  </div>
+                  {form.faqs.length < 20 && (
+                    <Button type="button" variant="outline" size="sm" onClick={addFaq}>
+                      <Plus className="h-4 w-4 mr-1" /> Add FAQ
+                    </Button>
+                  )}
+                </div>
+                {form.faqs.map((q, i) => (
+                  <div key={i} className="grid gap-2 p-3 rounded-md border bg-muted/30 relative">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-1 right-1 h-7 w-7 p-0"
+                      onClick={() => removeFaq(i)}
+                      aria-label="Remove FAQ"
+                    >
+                      ×
+                    </Button>
+                    <Input
+                      value={q.question}
+                      onChange={(e) => updateFaq(i, { question: e.target.value })}
+                      placeholder="Question (e.g. Do you offer revisions?)"
+                    />
+                    <Textarea
+                      value={q.answer}
+                      onChange={(e) => updateFaq(i, { answer: e.target.value })}
+                      rows={2}
+                      placeholder="Answer…"
+                    />
+                  </div>
+                ))}
+              </div>
 
               <div className="grid gap-2">
                 <Label>Booking / payment link (optional)</Label>

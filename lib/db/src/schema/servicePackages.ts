@@ -10,6 +10,11 @@ export type PackageTier = {
   deliverables: string[];
 };
 
+export type PackageFaq = {
+  question: string;
+  answer: string;
+};
+
 export const servicePackages = pgTable("service_packages", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -25,6 +30,7 @@ export const servicePackages = pgTable("service_packages", {
   // Optional tiered pricing (Basic/Standard/Premium). If empty array, the
   // package renders as single-tier using the top-level price/deliveryDays/etc.
   tiers: jsonb("tiers").$type<PackageTier[]>().notNull().default([]),
+  faqs: jsonb("faqs").$type<PackageFaq[]>().notNull().default([]),
   category: text("category"),
   ctaUrl: text("cta_url"),
   isPublic: boolean("is_public").notNull().default(true),

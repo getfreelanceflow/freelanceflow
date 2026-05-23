@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { z } from "zod";
 import { db } from "@workspace/db";
-import { servicePackages } from "@workspace/db/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { servicePackages, packageInquiries, INQUIRY_STATUSES } from "@workspace/db/schema";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import { createClerkClient } from "@clerk/express";
 import { requireUser, type AuthedRequest } from "../lib/requireUser";
 import { sendEmail, escapeHtml } from "../lib/email";
@@ -40,6 +40,11 @@ const tierSchema = z.object({
   deliverables: z.array(z.string().min(1)).default([]),
 });
 
+const faqSchema = z.object({
+  question: z.string().min(1).max(200),
+  answer: z.string().min(1).max(2000),
+});
+
 const upsertBaseSchema = z.object({
   title: z.string().min(1).max(120),
   tagline: z.string().max(200).nullable().optional(),
@@ -50,6 +55,7 @@ const upsertBaseSchema = z.object({
   revisions: z.number().int().nonnegative().default(2),
   deliverables: z.array(z.string().min(1)).default([]),
   tiers: z.array(tierSchema).max(5).default([]),
+  faqs: z.array(faqSchema).max(20).default([]),
   category: z.string().nullable().optional(),
   ctaUrl: safeUrl.nullable().optional().or(z.literal("")),
   isPublic: z.boolean().default(true),
@@ -127,6 +133,7 @@ function publicView(p: typeof servicePackages.$inferSelect) {
     revisions: p.revisions,
     deliverables: p.deliverables,
     tiers: p.tiers ?? [],
+    faqs: p.faqs ?? [],
     category: p.category,
     ctaUrl: p.ctaUrl,
     isPublic: p.isPublic,
@@ -200,6 +207,27 @@ router.post("/packages/public/:slug/inquire", rateLimit("pkg_inquire", 60_000, 5
       .update(servicePackages)
       .set({ inquiries: sql`${servicePackages.inquiries} + 1` })
       .where(eq(servicePackages.id, pkg.id));
+
+    // Persist the inquiry as a lead so the owner can manage it in their inbox
+    // even when email delivery fails or the visitor just clicked the CTA.
+    const reqIp =
+      (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ||
+      req.socket.remoteAddress ||
+      null;
+    try {
+      await db.insert(packageInquiries).values({
+        packageId: pkg.id,
+        userId: pkg.userId,
+        name: parsed.name ?? null,
+        email: parsed.email ?? null,
+        message: parsed.message ?? null,
+        tier: parsed.tier ?? null,
+        status: "new",
+        ip: reqIp,
+      });
+    } catch {
+      // Don't block the visitor flow on a logging failure.
+    }
 
     let delivered = false;
     if (parsed.name && parsed.email && parsed.message) {
@@ -291,6 +319,7 @@ router.post("/packages", requireUser, async (req, res) => {
         revisions: body.revisions,
         deliverables: body.deliverables,
         tiers: body.tiers,
+        faqs: body.faqs,
         category: body.category ?? null,
         ctaUrl: body.ctaUrl ? body.ctaUrl : null,
         isPublic: body.isPublic,
@@ -316,6 +345,7 @@ router.patch("/packages/:id", requireUser, async (req, res) => {
     if (body.revisions !== undefined) updates.revisions = body.revisions;
     if (body.deliverables !== undefined) updates.deliverables = body.deliverables;
     if (body.tiers !== undefined) updates.tiers = body.tiers;
+    if (body.faqs !== undefined) updates.faqs = body.faqs;
     if (body.category !== undefined) updates.category = body.category;
     if (body.ctaUrl !== undefined) updates.ctaUrl = body.ctaUrl ? body.ctaUrl : null;
     if (body.isPublic !== undefined) updates.isPublic = body.isPublic;
@@ -348,6 +378,121 @@ router.delete("/packages/:id", requireUser, async (req, res) => {
     res.status(204).end();
   } catch (e) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Internal error" });
+  }
+});
+
+// ---------- Lead Inbox (authed) ----------
+
+const inquiryStatusSchema = z.enum(INQUIRY_STATUSES);
+
+function internalError(res: Parameters<typeof router.get>[1] extends never ? never : any, e: unknown, where: string) {
+  // Never leak DB / provider internals to clients. Log server-side instead.
+  // eslint-disable-next-line no-console
+  console.error(`[servicePackages] ${where}:`, e);
+  return res.status(500).json({ error: "Internal error" });
+}
+
+router.get("/inquiries", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const statusParam = String(req.query.status ?? "").trim();
+    const statuses = statusParam
+      ? statusParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    const conditions = [eq(packageInquiries.userId, uid)];
+    if (statuses.length > 0) {
+      // Strictly validate the filter — reject unknown statuses with 400 so
+      // clients don't accidentally widen results by typoing a status name.
+      const validSet = new Set<string>(INQUIRY_STATUSES);
+      const invalid = statuses.filter((s) => !validSet.has(s));
+      if (invalid.length > 0) {
+        return res.status(400).json({
+          error: "Invalid status filter",
+          invalid,
+          allowed: INQUIRY_STATUSES,
+        });
+      }
+      conditions.push(
+        inArray(
+          packageInquiries.status,
+          statuses as unknown as (typeof INQUIRY_STATUSES)[number][],
+        ),
+      );
+    }
+    const rows = await db
+      .select({
+        id: packageInquiries.id,
+        packageId: packageInquiries.packageId,
+        name: packageInquiries.name,
+        email: packageInquiries.email,
+        message: packageInquiries.message,
+        tier: packageInquiries.tier,
+        status: packageInquiries.status,
+        createdAt: packageInquiries.createdAt,
+        packageTitle: servicePackages.title,
+        packageSlug: servicePackages.slug,
+      })
+      .from(packageInquiries)
+      .leftJoin(servicePackages, eq(packageInquiries.packageId, servicePackages.id))
+      .where(and(...conditions))
+      .orderBy(desc(packageInquiries.createdAt))
+      .limit(500);
+    res.json(rows);
+  } catch (e) {
+    return internalError(res, e, "GET /inquiries");
+  }
+});
+
+router.get("/inquiries/stats", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const rows = await db
+      .select({ status: packageInquiries.status, count: sql<number>`count(*)::int` })
+      .from(packageInquiries)
+      .where(eq(packageInquiries.userId, uid))
+      .groupBy(packageInquiries.status);
+    const stats: Record<string, number> = { new: 0, read: 0, starred: 0, archived: 0, spam: 0 };
+    for (const r of rows) stats[r.status] = r.count;
+    res.json(stats);
+  } catch (e) {
+    return internalError(res, e, "GET /inquiries/stats");
+  }
+});
+
+router.patch("/inquiries/:id", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const { status } = z.object({ status: inquiryStatusSchema }).parse(req.body ?? {});
+    const [row] = await db
+      .update(packageInquiries)
+      .set({ status })
+      .where(and(eq(packageInquiries.id, id), eq(packageInquiries.userId, uid)))
+      .returning();
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(row);
+  } catch (e) {
+    if (e instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid input", issues: e.issues });
+    }
+    return internalError(res, e, "PATCH /inquiries/:id");
+  }
+});
+
+router.delete("/inquiries/:id", requireUser, async (req, res) => {
+  try {
+    const uid = (req as unknown as AuthedRequest).userId;
+    const id = parseInt(String(req.params.id), 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid id" });
+    const result = await db
+      .delete(packageInquiries)
+      .where(and(eq(packageInquiries.id, id), eq(packageInquiries.userId, uid)))
+      .returning({ id: packageInquiries.id });
+    if (result.length === 0) return res.status(404).json({ error: "Not found" });
+    res.status(204).end();
+  } catch (e) {
+    return internalError(res, e, "DELETE /inquiries/:id");
   }
 });
 

@@ -29,6 +29,7 @@ import Tasks from "@/pages/Tasks";
 import Expenses from "@/pages/Expenses";
 import Goals from "@/pages/Goals";
 import Packages from "@/pages/Packages";
+import Leads from "@/pages/Leads";
 import PublicPackage from "@/pages/PublicPackage";
 import Contract from "@/pages/Contract";
 import Negotiate from "@/pages/Negotiate";
@@ -126,6 +127,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/expenses"><ProtectedRoute component={Expenses} /></Route>
             <Route path="/goals"><ProtectedRoute component={Goals} /></Route>
             <Route path="/packages"><ProtectedRoute component={Packages} /></Route>
+            <Route path="/leads"><ProtectedRoute component={Leads} /></Route>
             <Route path="/contract"><ProtectedRoute component={Contract} /></Route>
             <Route path="/negotiate"><ProtectedRoute component={Negotiate} /></Route>
             <Route path="/skill-gap"><ProtectedRoute component={SkillGap} /></Route>

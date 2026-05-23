@@ -339,6 +339,32 @@ export default function PublicPackage() {
           </Card>
         )}
 
+        {pkg.faqs && pkg.faqs.length > 0 && (
+          <Card className="border-2">
+            <CardContent className="p-6 sm:p-10">
+              <h2 className="text-2xl font-bold mb-6">Frequently asked questions</h2>
+              <div className="space-y-4">
+                {pkg.faqs.map((q, i) => (
+                  <details
+                    key={i}
+                    className="group rounded-lg border p-4 transition-colors open:bg-muted/40"
+                  >
+                    <summary className="cursor-pointer list-none flex items-start justify-between gap-4">
+                      <span className="font-medium">{q.question}</span>
+                      <span className="text-muted-foreground transition-transform group-open:rotate-45 select-none text-xl leading-none">
+                        +
+                      </span>
+                    </summary>
+                    <p className="mt-3 text-sm text-muted-foreground whitespace-pre-wrap">
+                      {q.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <p className="text-center text-xs text-muted-foreground">
           Powered by FreelanceFlow AI
         </p>

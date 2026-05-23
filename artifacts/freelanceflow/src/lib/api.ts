@@ -343,6 +343,17 @@ export const api = {
       j(body ?? {}),
     ),
 
+  // Lead inbox
+  listInquiries: (status?: string) =>
+    customFetch<PackageInquiry[]>(
+      `${base}/inquiries${status ? `?status=${encodeURIComponent(status)}` : ""}`,
+    ),
+  getInquiryStats: () => customFetch<InquiryStats>(`${base}/inquiries/stats`),
+  updateInquiryStatus: (id: number, status: InquiryStatus) =>
+    customFetch<PackageInquiry>(`${base}/inquiries/${id}`, j({ status }, "PATCH")),
+  deleteInquiry: (id: number) =>
+    customFetch<null>(`${base}/inquiries/${id}`, { method: "DELETE" }),
+
   // Contact (site-wide)
   sendContactMessage: (b: {
     name: string;
@@ -369,6 +380,11 @@ export type PackageTier = {
   deliverables: string[];
 };
 
+export type PackageFaq = {
+  question: string;
+  answer: string;
+};
+
 export type ServicePackage = {
   id: number;
   userId: string;
@@ -382,6 +398,7 @@ export type ServicePackage = {
   revisions: number;
   deliverables: string[];
   tiers: PackageTier[];
+  faqs: PackageFaq[];
   category: string | null;
   ctaUrl: string | null;
   isPublic: boolean;
@@ -389,6 +406,23 @@ export type ServicePackage = {
   inquiries: number;
   createdAt: string;
 };
+
+export type InquiryStatus = "new" | "read" | "starred" | "archived" | "spam";
+
+export type PackageInquiry = {
+  id: number;
+  packageId: number;
+  name: string | null;
+  email: string | null;
+  message: string | null;
+  tier: string | null;
+  status: InquiryStatus;
+  createdAt: string;
+  packageTitle: string | null;
+  packageSlug: string | null;
+};
+
+export type InquiryStats = Record<InquiryStatus, number>;
 
 export type TimeEntry = {
   id: number;
