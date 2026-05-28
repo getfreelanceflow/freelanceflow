@@ -40,7 +40,7 @@ async function activateSubscription(
   logger.info({ userId, plan, subId: sub.id, granted: amount }, "subscription activated");
 }
 
-async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
+export async function handleCheckoutCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId || session.client_reference_id;
   if (!userId) {
     logger.warn({ sessionId: session.id }, "checkout.session.completed without userId metadata");

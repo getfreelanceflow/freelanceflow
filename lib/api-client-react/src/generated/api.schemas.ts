@@ -465,6 +465,20 @@ export interface CheckoutSession {
   url: string | null;
 }
 
+export interface BillingPortalInput {
+  returnUrl?: string;
+}
+
+export interface BillingSyncInput {
+  sessionId: string;
+}
+
+export interface BillingSyncResult {
+  updated: boolean;
+  plan?: string | null;
+  grantedCredits?: number | null;
+}
+
 export type AiCostsResponseCosts = {[key: string]: number};
 
 export type AiCostsResponseLabels = {[key: string]: string};

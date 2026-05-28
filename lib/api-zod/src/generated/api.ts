@@ -214,8 +214,26 @@ export const GetAiCostsResponse = zod.object({
 /**
  * @summary Create Stripe Customer Portal session
  */
+export const CreateBillingPortalBody = zod.object({
+  "returnUrl": zod.string().optional()
+})
+
 export const CreateBillingPortalResponse = zod.object({
   "url": zod.string().nullable()
+})
+
+
+/**
+ * @summary Poll Stripe checkout session and sync plan/credits locally
+ */
+export const SyncBillingBody = zod.object({
+  "sessionId": zod.string()
+})
+
+export const SyncBillingResponse = zod.object({
+  "updated": zod.boolean(),
+  "plan": zod.string().nullish(),
+  "grantedCredits": zod.number().nullish()
 })
 
 

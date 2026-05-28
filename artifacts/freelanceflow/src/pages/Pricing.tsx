@@ -31,8 +31,8 @@ const monthlyTiers: Tier[] = [
   {
     name: "Pro",
     id: "tier-pro",
-    monthlyEquivalent: "$10",
-    priceLabel: "$10",
+    monthlyEquivalent: "$12",
+    priceLabel: "$12",
     priceSuffix: "/mo",
     description: "For active freelancers shipping proposals weekly.",
     features: [
@@ -48,8 +48,8 @@ const monthlyTiers: Tier[] = [
   {
     name: "Pro Plus",
     id: "tier-plus",
-    monthlyEquivalent: "$25",
-    priceLabel: "$25",
+    monthlyEquivalent: "$29",
+    priceLabel: "$29",
     priceSuffix: "/mo",
     description: "Power-user volume for agencies and full-timers.",
     features: [
@@ -134,10 +134,14 @@ export default function Pricing() {
     });
   }
 
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const successUrl = `${window.location.origin}${base}/billing?status=success`;
+  const cancelUrl = `${window.location.origin}${base}/pricing?status=cancel`;
+
   async function startSubscription(tier: SubTier) {
     setLoadingId(tier);
     try {
-      const res = await subCheckout.mutateAsync({ data: { tier } });
+      const res = await subCheckout.mutateAsync({ data: { tier, successUrl, cancelUrl } });
       if (res.url) window.location.href = res.url;
       else notConfigured();
     } catch (e: unknown) {
@@ -152,7 +156,7 @@ export default function Pricing() {
   async function startPack(pack: "small" | "medium" | "large") {
     setLoadingId(pack);
     try {
-      const res = await packCheckout.mutateAsync({ data: { pack } });
+      const res = await packCheckout.mutateAsync({ data: { pack, successUrl, cancelUrl: `${window.location.origin}${base}/pricing?status=cancel` } });
       if (res.url) window.location.href = res.url;
       else notConfigured();
     } catch (e: unknown) {

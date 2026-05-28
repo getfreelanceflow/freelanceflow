@@ -11,6 +11,7 @@ import {
   PLANS,
   CREDIT_PACKS,
   totalCreditsPerCycle,
+  planFromPriceMetadata,
   type PlanId,
   type CreditPackId,
 } from "../lib/billing";
@@ -18,6 +19,8 @@ import { AI_COSTS, AI_ACTION_LABELS } from "../lib/aiCosts";
 import { getUncachableStripeClient, isStripeConfigured } from "../lib/stripeClient";
 import { ensureCatalog } from "../lib/stripeProducts";
 import { logger } from "../lib/logger";
+import { handleCheckoutCompleted } from "../lib/stripeWebhook";
+import type Stripe from "stripe";
 
 const router = Router();
 
@@ -88,6 +91,8 @@ router.post("/billing/checkout-subscription", requireUser, async (req, res) => {
     const body = SubscriptionBody.parse(req.body);
     const stripe = await getUncachableStripeClient();
 
+    const origin = trustedOrigin();
+
     // If user already has an active subscription, route them to the billing portal
     // to switch/cancel instead of creating a parallel subscription.
     const existing = await getOrCreateBilling(uid);
@@ -97,10 +102,11 @@ router.post("/billing/checkout-subscription", requireUser, async (req, res) => {
       existing.subscriptionStatus &&
       ["active", "trialing", "past_due"].includes(existing.subscriptionStatus)
     ) {
-      const origin = trustedOrigin();
+      const returnUrl = body.successUrl ?? (origin ? `${origin}/billing?status=portal` : null);
+      if (!returnUrl) return res.status(500).json({ error: "trusted_origin_unavailable" });
       const portal = await stripe.billingPortal.sessions.create({
         customer: existing.stripeCustomerId,
-        return_url: `${origin ?? ""}/billing`,
+        return_url: returnUrl,
       });
       return res.json({ url: portal.url, mode: "portal" });
     }
@@ -109,7 +115,6 @@ router.post("/billing/checkout-subscription", requireUser, async (req, res) => {
     const entry = catalog.subscriptions[body.tier];
     if (!entry) return res.status(500).json({ error: "price_not_found" });
     const customerId = await ensureCustomer(uid);
-    const origin = trustedOrigin();
     if (!origin) return res.status(500).json({ error: "trusted_origin_unavailable" });
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -160,22 +165,70 @@ router.post("/billing/checkout-credits", requireUser, async (req, res) => {
   }
 });
 
+const PortalBody = z.object({ returnUrl: z.string().optional() });
 router.post("/billing/portal", requireUser, async (req, res) => {
   const uid = (req as unknown as AuthedRequest).userId;
   if (!(await isStripeConfigured())) return res.status(503).json({ error: "stripe_not_configured" });
   try {
+    const body = PortalBody.parse(req.body);
     const b = await getOrCreateBilling(uid);
     if (!b.stripeCustomerId) return res.status(400).json({ error: "no_customer" });
     const stripe = await getUncachableStripeClient();
     const origin = trustedOrigin();
-    if (!origin) return res.status(500).json({ error: "trusted_origin_unavailable" });
+    const returnUrl = body.returnUrl ?? (origin ? `${origin}/billing` : null);
+    if (!returnUrl) return res.status(500).json({ error: "trusted_origin_unavailable" });
     const session = await stripe.billingPortal.sessions.create({
       customer: b.stripeCustomerId,
-      return_url: `${origin}/billing`,
+      return_url: returnUrl,
     });
     res.json({ url: session.url });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
+    res.status(500).json({ error: msg });
+  }
+});
+
+const SyncBody = z.object({ sessionId: z.string() });
+
+async function refreshFromCheckout(
+  stripe: Stripe,
+  sessionId: string,
+  userId: string,
+): Promise<{ updated: boolean; plan?: PlanId; grantedCredits?: number }> {
+  const session = await stripe.checkout.sessions.retrieve(sessionId, {
+    expand: ["subscription", "line_items.data.price"],
+  });
+  if (session.client_reference_id && session.client_reference_id !== userId) {
+    throw new Error("session_user_mismatch");
+  }
+  if (session.status !== "complete" && session.payment_status !== "paid") {
+    return { updated: false };
+  }
+  await handleCheckoutCompleted(stripe, session);
+  const priceMeta = (() => {
+    if (session.mode === "subscription") {
+      const sub = session.subscription as Stripe.Subscription | null;
+      return sub?.items?.data[0]?.price?.metadata as Record<string, string> | undefined;
+    }
+    const li = session.line_items?.data[0];
+    return li?.price?.metadata as Record<string, string> | undefined;
+  })();
+  const plan = planFromPriceMetadata(priceMeta);
+  const grantedCredits = plan ? totalCreditsPerCycle(plan) : undefined;
+  return { updated: true, plan: plan ?? undefined, grantedCredits };
+}
+
+router.post("/billing/sync", requireUser, async (req, res) => {
+  const uid = (req as unknown as AuthedRequest).userId;
+  if (!(await isStripeConfigured())) return res.status(503).json({ error: "stripe_not_configured" });
+  try {
+    const body = SyncBody.parse(req.body);
+    const stripe = await getUncachableStripeClient();
+    const result = await refreshFromCheckout(stripe, body.sessionId, uid);
+    res.json(result);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error({ err: msg }, "billing sync failed");
     res.status(500).json({ error: msg });
   }
 });

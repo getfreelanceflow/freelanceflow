@@ -25,6 +25,9 @@ import type {
   BillingCatalog,
   BillingError,
   BillingMe,
+  BillingPortalInput,
+  BillingSyncInput,
+  BillingSyncResult,
   CreateBillingPortal200,
   CreateCreditsCheckout200,
   CreateSubscriptionCheckout200,
@@ -849,14 +852,15 @@ export const getCreateBillingPortalUrl = () => {
 /**
  * @summary Create Stripe Customer Portal session
  */
-export const createBillingPortal = async ( options?: RequestInit): Promise<CreateBillingPortal200> => {
+export const createBillingPortal = async (billingPortalInput?: BillingPortalInput, options?: RequestInit): Promise<CreateBillingPortal200> => {
 
   return customFetch<CreateBillingPortal200>(getCreateBillingPortalUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      billingPortalInput,)
   }
 );}
 
@@ -864,8 +868,8 @@ export const createBillingPortal = async ( options?: RequestInit): Promise<Creat
 
 
 export const getCreateBillingPortalMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,{data?: BodyType<BillingPortalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,{data?: BodyType<BillingPortalInput>}, TContext> => {
 
 const mutationKey = ['createBillingPortal'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -877,10 +881,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBillingPortal>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBillingPortal>>, {data?: BodyType<BillingPortalInput>}> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  createBillingPortal(requestOptions)
+          return  createBillingPortal(data,requestOptions)
         }
 
 
@@ -891,21 +895,92 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateBillingPortalMutationResult = NonNullable<Awaited<ReturnType<typeof createBillingPortal>>>
-
+    export type CreateBillingPortalMutationBody = BodyType<BillingPortalInput> | undefined
     export type CreateBillingPortalMutationError = ErrorType<unknown>
 
     /**
  * @summary Create Stripe Customer Portal session
  */
 export const useCreateBillingPortal = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBillingPortal>>, TError,{data?: BodyType<BillingPortalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof createBillingPortal>>,
         TError,
-        void,
+        {data?: BodyType<BillingPortalInput>},
         TContext
       > => {
       return useMutation(getCreateBillingPortalMutationOptions(options));
+    }
+
+export const getSyncBillingUrl = () => {
+
+
+
+
+  return `/api/billing/sync`
+}
+
+/**
+ * @summary Poll Stripe checkout session and sync plan/credits locally
+ */
+export const syncBilling = async (billingSyncInput: BillingSyncInput, options?: RequestInit): Promise<BillingSyncResult> => {
+
+  return customFetch<BillingSyncResult>(getSyncBillingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      billingSyncInput,)
+  }
+);}
+
+
+
+
+export const getSyncBillingMutationOptions = <TError = ErrorType<BillingError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBilling>>, TError,{data: BodyType<BillingSyncInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncBilling>>, TError,{data: BodyType<BillingSyncInput>}, TContext> => {
+
+const mutationKey = ['syncBilling'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncBilling>>, {data: BodyType<BillingSyncInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  syncBilling(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncBillingMutationResult = NonNullable<Awaited<ReturnType<typeof syncBilling>>>
+    export type SyncBillingMutationBody = BodyType<BillingSyncInput>
+    export type SyncBillingMutationError = ErrorType<BillingError>
+
+    /**
+ * @summary Poll Stripe checkout session and sync plan/credits locally
+ */
+export const useSyncBilling = <TError = ErrorType<BillingError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncBilling>>, TError,{data: BodyType<BillingSyncInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncBilling>>,
+        TError,
+        {data: BodyType<BillingSyncInput>},
+        TContext
+      > => {
+      return useMutation(getSyncBillingMutationOptions(options));
     }
 
 export const getListMyJobsUrl = () => {

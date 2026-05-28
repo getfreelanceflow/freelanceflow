@@ -26,15 +26,43 @@ export default function Billing() {
   const portal = useCreateBillingPortal();
   const [loading, setLoading] = useState<string | null>(null);
 
+  const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (params.get("status") === "success" && sessionId) {
+      toast({ title: "Payment successful", description: "Syncing your account…" });
+      (async () => {
+        try {
+          const res = await fetch(`${window.location.origin}${base}/api/billing/sync`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ sessionId }),
+          });
+          if (!res.ok) throw res;
+          const result = (await res.json()) as { updated: boolean; plan?: string | null; grantedCredits?: number | null };
+          toast({
+            title: result.updated ? "Account upgraded" : "Still processing",
+            description: result.updated
+              ? `You are now on the ${result.plan ?? "Pro"} plan${result.grantedCredits ? ` with ${result.grantedCredits} credits` : ""}.`
+              : "Payment confirmed but still finalizing. Your account will update shortly.",
+          });
+          await me.refetch();
+        } catch {
+          toast({ title: "Account syncing", description: "We'll update your account shortly.", variant: "destructive" });
+        }
+      })();
+      return undefined;
+    }
     if (params.get("status") === "success") {
       toast({ title: "Payment successful", description: "Your account is being updated…" });
       const t = setTimeout(() => me.refetch(), 2000);
       return () => clearTimeout(t);
     }
     return undefined;
-  }, [me, toast]);
+  }, [me, toast, base]);
 
   const billing = me.data;
   const plans = catalog.data?.plans ?? [];
@@ -44,15 +72,25 @@ export default function Billing() {
     setLoading(`${action}:${id ?? ""}`);
     try {
       let url: string | null = null;
-      if (action === "sub")
-        url = (await sub.mutateAsync({ data: { tier: id as SubTier } })).url;
-      else if (action === "pack")
-        url = (await pack.mutateAsync({ data: { pack: id as "small" | "medium" | "large" } })).url;
-      else url = (await portal.mutateAsync()).url;
+      if (action === "sub") {
+        url = (await sub.mutateAsync({ data: { tier: id as SubTier, successUrl: `${window.location.origin}${base}/billing?status=success`, cancelUrl: `${window.location.origin}${base}/pricing?status=cancel` } })).url;
+      } else if (action === "pack") {
+        url = (await pack.mutateAsync({ data: { pack: id as "small" | "medium" | "large", successUrl: `${window.location.origin}${base}/billing?status=success`, cancelUrl: `${window.location.origin}${base}/pricing?status=cancel` } })).url;
+      } else {
+        const res = await fetch(`${window.location.origin}${base}/api/billing/portal`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ returnUrl: `${window.location.origin}${base}/billing?status=portal` }),
+        });
+        if (!res.ok) throw res;
+        const data = (await res.json()) as { url: string | null };
+        url = data.url;
+      }
       if (url) window.location.href = url;
       else throw new Error("no url");
     } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } }).response?.status;
+      const status = (e as { response?: { status?: number }; status?: number }).response?.status ?? (e as { status?: number }).status;
       if (status === 503) {
         toast({
           title: "Payments aren't connected",

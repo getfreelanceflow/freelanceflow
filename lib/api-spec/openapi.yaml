@@ -237,6 +237,12 @@ paths:
       operationId: createBillingPortal
       tags: [billing]
       summary: Create Stripe Customer Portal session
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingPortalInput"
       responses:
         "200":
           description: Portal URL
@@ -248,6 +254,31 @@ paths:
                 properties:
                   url:
                     type: ["string", "null"]
+
+  /billing/sync:
+    post:
+      operationId: syncBilling
+      tags: [billing]
+      summary: Poll Stripe checkout session and sync plan/credits locally
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingSyncInput"
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingSyncResult"
+        "503":
+          description: Stripe not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingError"
 
   /jobs/mine:
     get:
@@ -1314,6 +1345,32 @@ components:
       properties:
         url:
           type: ["string", "null"]
+
+    BillingPortalInput:
+      type: object
+      properties:
+        returnUrl:
+          type: string
+
+    BillingSyncInput:
+      type: object
+      required: [sessionId]
+      properties:
+        sessionId:
+          type: string
+
+    BillingSyncResult:
+      type: object
+      required: [updated]
+      properties:
+        updated:
+          type: boolean
+        plan:
+          type: string
+          nullable: true
+        grantedCredits:
+          type: integer
+          nullable: true
 
     AiCostsResponse:
       type: object
